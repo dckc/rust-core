@@ -9,9 +9,10 @@
 // except according to those terms.
 
 use container::Container;
-use mem::{forget, move_val_init, size_of, transmute};
+use mem::{Allocator, forget, move_val_init, size_of, transmute};
 use fail::out_of_memory;
-use heap::{free, alloc, realloc};
+#[cfg(libc)]
+use heap::Heap;
 use ops::Drop;
 use slice::{Items, Slice, iter, unchecked_get, unchecked_mut_get};
 use ptr::{offset, read_ptr};
@@ -24,26 +25,44 @@ use clone::Clone;
 pub struct Vec<'a, T> {
     priv len: uint,
     priv cap: uint,
-    priv ptr: *mut T
+    priv ptr: *mut T,
+    priv alloc: &'a mut Allocator
 }
 
 impl<'a, T> Vec<'a, T> {
+    #[cfg(libc)]
     #[inline(always)]
     pub fn new() -> Vec<T> {
-        Vec { len: 0, cap: 0, ptr: 0 as *mut T }
+        Vec::with_alloc(&mut Heap)
     }
 
+    #[cfg(libc)]
+    #[inline(always)]
     pub fn with_capacity(capacity: uint) -> Vec<T> {
+        Vec::with_alloc_capacity(&mut Heap, capacity)
+    }
+
+    #[inline(always)]
+    pub fn with_alloc(alloc: &mut Allocator) -> Vec<T> {
+        Vec { len: 0, cap: 0, ptr: 0 as *mut T, alloc: alloc }
+    }
+
+    pub fn with_alloc_capacity(alloc: &mut Allocator, capacity: uint) -> Vec<T> {
         if capacity == 0 {
-            Vec::new()
+            Vec::with_alloc(alloc)
         } else {
             let (size, overflow) = mul_with_overflow(capacity, size_of::<T>());
             if overflow {
                 out_of_memory();
             }
-            let ptr = unsafe { alloc(size) };
-            Vec { len: 0, cap: capacity, ptr: ptr as *mut T }
+            let (ptr, _) = unsafe { alloc.alloc(size) };
+            Vec { len: 0, cap: capacity, ptr: ptr as *mut T, alloc: alloc }
         }
+    }
+
+    #[inline(always)]
+    pub fn get_allocator<'a>(&'a self) -> &'a &'a mut Allocator {
+        &self.alloc
     }
 
     #[inline(always)]
@@ -59,7 +78,8 @@ impl<'a, T> Vec<'a, T> {
             }
             self.cap = capacity;
             unsafe {
-                self.ptr = realloc(self.ptr as *mut u8, size) as *mut T;
+                let (ptr, _) = self.alloc.realloc(self.ptr as *mut u8, size);
+                self.ptr = ptr as *mut T;
             }
         }
     }
@@ -67,13 +87,14 @@ impl<'a, T> Vec<'a, T> {
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         if self.len == 0 {
-            unsafe { free(self.ptr as *mut u8) };
+            unsafe { self.alloc.free(self.ptr as *mut u8) };
             self.cap = 0;
             self.ptr = 0 as *mut T;
         } else {
             unsafe {
                 // Overflow check is unnecessary as the vector is already at least this large.
-                self.ptr = realloc(self.ptr as *mut u8, self.len * size_of::<T>()) as *mut T;
+                let (ptr, _) = self.alloc.realloc(self.ptr as *mut u8, self.len * size_of::<T>());
+                self.ptr = ptr as *mut T;
             }
             self.cap = self.len;
         }
@@ -99,7 +120,8 @@ impl<'a, T> Vec<'a, T> {
             let size = old_size * 2;
             if old_size > size { out_of_memory() }
             unsafe {
-                self.ptr = realloc(self.ptr as *mut u8, size) as *mut T;
+                let (ptr, _) = self.alloc.realloc(self.ptr as *mut u8, size);
+                self.ptr = ptr as *mut T;
             }
         }
 
@@ -138,8 +160,9 @@ impl<'a, T> Vec<'a, T> {
         unsafe {
             let iter = transmute(iter(self.as_slice()));
             let ptr = self.ptr as *mut u8;
+            let alloc = transmute(self.get_allocator());
             forget(self);
-            MoveItems { allocation: ptr, iter: iter }
+            MoveItems { allocation: ptr, iter: iter, alloc: alloc }
         }
     }
 
@@ -148,6 +171,7 @@ impl<'a, T> Vec<'a, T> {
     }
 }
 
+#[cfg(libc)]
 impl<'a, T: Clone> Vec<'a, T> {
     pub fn from_elem(length: uint, value: T) -> Vec<T> {
         unsafe {
@@ -186,14 +210,15 @@ impl<'a, T> Drop for Vec<'a, T> {
             for x in iter(self.as_mut_slice()) {
                 read_ptr(x);
             }
-            free(self.ptr as *mut u8)
+            self.alloc.free(self.ptr as *mut u8)
         }
     }
 }
 
 pub struct MoveItems<T> {
     priv allocation: *mut u8, // the block of memory allocated for the vector
-    priv iter: Items<'static, T>
+    priv iter: Items<'static, T>,
+    priv alloc: &'static mut &'static mut Allocator
 }
 
 impl<T> Iterator<T> for MoveItems<T> {
@@ -222,7 +247,7 @@ impl<T> Drop for MoveItems<T> {
         // destroy the remaining elements
         for _x in *self {}
         unsafe {
-            free(self.allocation)
+            self.alloc.free(self.allocation)
         }
     }
 }

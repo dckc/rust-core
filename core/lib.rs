@@ -52,7 +52,6 @@ pub mod str;
 pub mod thread;
 #[cfg(libc)]
 pub mod time;
-#[cfg(libc)]
 pub mod vec;
 
 pub mod uint;
