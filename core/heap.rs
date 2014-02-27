@@ -9,6 +9,7 @@
 // except according to those terms.
 
 use fail::out_of_memory;
+use mem::Allocator;
 
 mod detail {
     extern {
@@ -66,5 +67,25 @@ pub unsafe fn realloc(ptr: *mut u8, size: uint) -> *mut u8 {
             out_of_memory()
         }
         ptr
+    }
+}
+
+pub struct Heap;
+
+impl Allocator for Heap {
+    unsafe fn alloc(&mut self, size: uint) -> (*mut u8, uint) {
+        (alloc(size), size)
+    }
+
+    unsafe fn zero_alloc(&mut self, size: uint) -> (*mut u8, uint) {
+        (zero_alloc(size), size)
+    }
+
+    unsafe fn realloc(&mut self, ptr: *mut u8, size: uint) -> (*mut u8, uint) {
+        (realloc(ptr, size), size)
+    }
+
+    unsafe fn free(&mut self, ptr: *mut u8) {
+        free(ptr)
     }
 }
