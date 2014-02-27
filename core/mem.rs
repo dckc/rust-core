@@ -10,6 +10,7 @@
 
 use ptr::copy_nonoverlapping_memory;
 use cmp::min;
+use clone::Clone;
 
 mod detail {
     extern "rust-intrinsic" {
@@ -88,4 +89,27 @@ pub fn swap<T>(x: &mut T, y: &mut T) {
 pub fn replace<T>(dest: &mut T, mut src: T) -> T {
     swap(dest, &mut src);
     src
+}
+
+pub trait Allocator : Clone {
+    /// Allocate at least `size` bytes of memory.
+    ///
+    /// The `size` parameter must be non-zero. Return a pointer to the memory
+    /// allocation and the usable size.
+    unsafe fn alloc(&self, size: uint) -> (*mut u8, uint);
+
+    /// Allocate at least `size` zeroed bytes of memory.
+    ///
+    /// The `size` parameter must be non-zero. Return a pointer to the memory
+    /// allocation and the usable size.
+    unsafe fn zero_alloc(&self, size: uint) -> (*mut u8, uint);
+
+    /// Change the size of the memory allocation pointed to by `ptr` to `size`.
+    ///
+    /// The `size` parameter must be non-zero. Return a pointer to the memory
+    /// allocation and the usable size.
+    unsafe fn realloc(&self, ptr: *mut u8, size: uint) -> (*mut u8, uint);
+
+    /// Free the memory allocation pointed to by `ptr`.
+    unsafe fn free(&self, ptr: *mut u8);
 }
