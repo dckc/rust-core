@@ -18,18 +18,18 @@ use mem::swap;
 use slice;
 
 /// A priority queue implemented with a binary heap
-pub struct PriorityQueue<T> {
-    priv data: Vec<T>
+pub struct PriorityQueue<'a, T> {
+    priv data: Vec<'a, T>
 }
 
-impl<T> Container for PriorityQueue<T> {
+impl<'a, T> Container for PriorityQueue<'a, T> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.data.len()
     }
 }
 
-impl<T: Ord> PriorityQueue<T> {
+impl<'a, T: Ord> PriorityQueue<'a, T> {
     #[inline(always)]
     pub fn capacity(&self) -> uint {
         self.data.capacity()

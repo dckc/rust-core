@@ -24,10 +24,10 @@ use slice::{unchecked_get, unchecked_mut_get, unchecked_swap};
 use fail::{abort, assert};
 use option::{Option, Some, None};
 
-pub struct Deque<T> {
+pub struct Deque<'a, T> {
     priv nelts: uint,
     priv lo: uint,
-    priv elts: Vec<T>
+    priv elts: Vec<'a, T>
 }
 
 fn raw_index(lo: uint, len: uint, index: uint) -> uint {
@@ -38,14 +38,14 @@ fn raw_index(lo: uint, len: uint, index: uint) -> uint {
     }
 }
 
-impl<T> Container for Deque<T> {
+impl<'a, T> Container for Deque<'a, T> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.nelts
     }
 }
 
-impl<T> Deque<T> {
+impl<'a, T> Deque<'a, T> {
     pub fn new() -> Deque<T> {
         Deque{ nelts: 0, lo: 0, elts: Vec::new() }
     }
@@ -152,7 +152,7 @@ impl<T> Deque<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Deque<T> {
+impl<'a, T> Drop for Deque<'a, T> {
     fn drop(&mut self) {
         // Make sure the Vec destructor isn't going to ruin our day
         assert(self.elts.len() == 0);

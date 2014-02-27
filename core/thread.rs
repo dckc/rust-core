@@ -314,12 +314,12 @@ impl<'a> Drop for LockGuard<'a> {
 }
 
 /// A pool of worker threads
-pub struct Pool {
-    priv queue: Queue<Option<proc()>>,
-    priv pool: Vec<Thread<()>>
+pub struct Pool<'a> {
+    priv queue: Queue<'a, Option<proc()>>,
+    priv pool: Vec<'a, Thread<()>>
 }
 
-impl Pool {
+impl<'a> Pool<'a> {
     /// Create a thread pool with `n_threads` threads.
     pub fn new(n_threads: uint) -> Pool {
         let queue = Queue::<Option<proc()>>::new();
@@ -347,7 +347,7 @@ impl Pool {
     }
 }
 
-impl Drop for Pool {
+impl<'a> Drop for Pool<'a> {
     fn drop(&mut self) {
         let mut i = 0;
         while i < self.pool.len() {

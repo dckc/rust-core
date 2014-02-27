@@ -323,12 +323,12 @@ struct Bucket<K,V> {
     value: V,
 }
 
-pub struct HashMap<K,V> {
+pub struct HashMap<'a, K,V> {
     priv k0: u64,
     priv k1: u64,
     priv resize_at: uint,
     priv size: uint,
-    priv buckets: Vec<Option<Bucket<K, V>>>
+    priv buckets: Vec<'a, Option<Bucket<K, V>>>,
 }
 
 enum SearchResult {
@@ -340,7 +340,7 @@ fn resize_at(capacity: uint) -> uint {
     (capacity * 3) / 4
 }
 
-impl<K:Hash + Eq,V> HashMap<K, V> {
+impl<'a, K:Hash + Eq,V> HashMap<'a, K, V> {
     #[inline(always)]
     fn to_bucket(&self, h: uint) -> uint {
         h % self.buckets.len()
@@ -506,12 +506,12 @@ impl<K:Hash + Eq,V> HashMap<K, V> {
     }
 }
 
-impl<K:Hash + Eq,V> Container for HashMap<K, V> {
+impl<'a, K: Hash + Eq, V> Container for HashMap<'a, K, V> {
     /// Return the number of elements in the map
     fn len(&self) -> uint { self.size }
 }
 
-impl<K: Hash + Eq, V> HashMap<K, V> {
+impl<'a, K: Hash + Eq, V> HashMap<'a, K, V> {
     /// Return a reference to the value corresponding to the key
     pub fn find<'a>(&'a self, k: &K) -> Option<&'a V> {
         match self.bucket_for_key(k) {

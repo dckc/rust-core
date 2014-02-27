@@ -50,8 +50,8 @@ struct LruEntry<K, V> {
 }
 
 /// An LRU Cache.
-pub struct LruCache<K, V> {
-    priv map: HashMap<KeyRef<K>, ~LruEntry<K, V>>,
+pub struct LruCache<'a, K, V> {
+    priv map: HashMap<'a, KeyRef<K>, ~LruEntry<K, V>>,
     priv max_size: uint,
     priv head: *mut LruEntry<K, V>,
     priv tail: *mut LruEntry<K, V>,
@@ -89,7 +89,7 @@ impl<K, V> LruEntry<K, V> {
     }
 }
 
-impl<K: HashBytes + Eq, V> LruCache<K, V> {
+impl<'a, K: HashBytes + Eq, V> LruCache<'a, K, V> {
     /// Create an LRU Cache holding at most `capacity` items.
     pub fn new(k0: u64, k1: u64, capacity: uint) -> LruCache<K, V> {
         let cache = LruCache {
@@ -215,7 +215,7 @@ impl<K: HashBytes + Eq, V> LruCache<K, V> {
     }
 }
 
-impl<K: HashBytes + Eq, V> Container for LruCache<K, V> {
+impl<'a, K: HashBytes + Eq, V> Container for LruCache<'a, K, V> {
     /// Return the number of key-value pairs in the cache.
     fn len(&self) -> uint {
         self.map.len()
@@ -223,7 +223,7 @@ impl<K: HashBytes + Eq, V> Container for LruCache<K, V> {
 }
 
 #[unsafe_destructor]
-impl<K, V> Drop for LruCache<K, V> {
+impl<'a, K, V> Drop for LruCache<'a, K, V> {
     fn drop(&mut self) {
         unsafe {
             let _: ~LruEntry<K, V> = transmute(self.head);

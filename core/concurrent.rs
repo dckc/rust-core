@@ -28,17 +28,17 @@ use kinds::Send;
 use kinds::marker::NoFreeze;
 use time::{Time, monotonic};
 
-trait GenericQueue<T>: Container {
+trait GenericQueue<'a, T>: Container {
     fn generic_push(&mut self, item: T);
     fn generic_pop(&mut self) -> Option<T>;
 }
 
-impl<T> GenericQueue<T> for Deque<T> {
+impl<'a, T> GenericQueue<'a, T> for Deque<'a, T> {
     fn generic_push(&mut self, item: T) { self.push_back(item) }
     fn generic_pop(&mut self) -> Option<T> { self.pop_front() }
 }
 
-impl<T: Ord> GenericQueue<T> for PriorityQueue<T> {
+impl<'a, T: Ord> GenericQueue<'a, T> for PriorityQueue<'a, T> {
     fn generic_push(&mut self, item: T) { self.push(item) }
     fn generic_pop(&mut self) -> Option<T> { self.pop() }
 }
@@ -54,7 +54,7 @@ struct QueuePtr<T> {
     ptr: Arc<QueueBox<T>>
 }
 
-impl<A: Send, T: GenericQueue<A>> QueuePtr<T> {
+impl<'a, A: Send, T: GenericQueue<'a, A>> QueuePtr<T> {
     fn new(queue: T) -> QueuePtr<T> {
         unsafe {
             let b = QueueBox { queue: queue, mutex: Mutex::new(), not_empty: Cond::new(),
@@ -116,11 +116,11 @@ impl<T> Clone for QueuePtr<T> {
 }
 
 /// An unbounded, blocking concurrent queue
-pub struct Queue<T> {
-    priv ptr: QueuePtr<Deque<T>>
+pub struct Queue<'a, T> {
+    priv ptr: QueuePtr<Deque<'a, T>>
 }
 
-impl<T: Send> Queue<T> {
+impl<'a, T: Send> Queue<'a, T> {
     /// Return a new `Queue` instance.
     pub fn new() -> Queue<T> {
         Queue { ptr: QueuePtr::new(Deque::new()) }
@@ -148,7 +148,7 @@ impl<T: Send> Queue<T> {
     }
 }
 
-impl<T> Clone for Queue<T> {
+impl<'a, T> Clone for Queue<'a, T> {
     /// Return a shallow copy of the queue
     fn clone(&self) -> Queue<T> {
         Queue { ptr: self.ptr.clone() }
@@ -156,11 +156,11 @@ impl<T> Clone for Queue<T> {
 }
 
 /// An unbounded, blocking concurrent priority queue
-pub struct BlockingPriorityQueue<T> {
-    priv ptr: QueuePtr<PriorityQueue<T>>
+pub struct BlockingPriorityQueue<'a, T> {
+    priv ptr: QueuePtr<PriorityQueue<'a, T>>
 }
 
-impl<T: Ord + Send> BlockingPriorityQueue<T> {
+impl<'a, T: Ord + Send> BlockingPriorityQueue<'a, T> {
     /// Return a new `BlockingPriorityQueue` instance.
     pub fn new() -> BlockingPriorityQueue<T> {
         BlockingPriorityQueue { ptr: QueuePtr::new(PriorityQueue::new()) }
@@ -188,7 +188,7 @@ impl<T: Ord + Send> BlockingPriorityQueue<T> {
     }
 }
 
-impl<T> Clone for BlockingPriorityQueue<T> {
+impl<'a, T> Clone for BlockingPriorityQueue<'a, T> {
     /// Return a shallow copy of the queue
     fn clone(&self) -> BlockingPriorityQueue<T> {
         BlockingPriorityQueue { ptr: self.ptr.clone() }
@@ -208,7 +208,7 @@ struct BoundedQueuePtr<T> {
     ptr: Arc<BoundedQueueBox<T>>
 }
 
-impl<A: Send, T: GenericQueue<A>> BoundedQueuePtr<T> {
+impl<'a, A: Send, T: GenericQueue<'a, A>> BoundedQueuePtr<T> {
     fn new(maximum: uint, queue: T) -> BoundedQueuePtr<T> {
         unsafe {
             let b = BoundedQueueBox { deque: queue, mutex: Mutex::new(), not_empty: Cond::new(),
@@ -317,11 +317,11 @@ impl<T> Clone for BoundedQueuePtr<T> {
 }
 
 /// A bounded, blocking concurrent queue
-pub struct BoundedQueue<T> {
-    priv ptr: BoundedQueuePtr<Deque<T>>
+pub struct BoundedQueue<'a, T> {
+    priv ptr: BoundedQueuePtr<Deque<'a, T>>
 }
 
-impl<T: Send> BoundedQueue<T> {
+impl<'a, T: Send> BoundedQueue<'a, T> {
     /// Return a new `BoundedQueue` instance, holding at most `maximum` elements.
     pub fn new(maximum: uint) -> BoundedQueue<T> {
         BoundedQueue { ptr: BoundedQueuePtr::new(maximum, Deque::new()) }
@@ -360,7 +360,7 @@ impl<T: Send> BoundedQueue<T> {
     }
 }
 
-impl<T> Clone for BoundedQueue<T> {
+impl<'a, T> Clone for BoundedQueue<'a, T> {
     /// Return a shallow copy of the queue
     fn clone(&self) -> BoundedQueue<T> {
         BoundedQueue { ptr: self.ptr.clone() }
@@ -368,11 +368,11 @@ impl<T> Clone for BoundedQueue<T> {
 }
 
 /// A bounded, blocking concurrent priority queue
-pub struct BoundedPriorityQueue<T> {
-    priv ptr: BoundedQueuePtr<PriorityQueue<T>>
+pub struct BoundedPriorityQueue<'a, T> {
+    priv ptr: BoundedQueuePtr<PriorityQueue<'a, T>>
 }
 
-impl<T: Ord + Send> BoundedPriorityQueue<T> {
+impl<'a, T: Ord + Send> BoundedPriorityQueue<'a, T> {
     /// Return a new `BoundedPriorityQueue` instance, holding at most `maximum` elements.
     pub fn new(maximum: uint) -> BoundedPriorityQueue<T> {
         BoundedPriorityQueue { ptr: BoundedQueuePtr::new(maximum, PriorityQueue::new()) }
@@ -411,20 +411,20 @@ impl<T: Ord + Send> BoundedPriorityQueue<T> {
     }
 }
 
-impl<T> Clone for BoundedPriorityQueue<T> {
+impl<'a, T> Clone for BoundedPriorityQueue<'a, T> {
     /// Return a shallow copy of the queue
     fn clone(&self) -> BoundedPriorityQueue<T> {
         BoundedPriorityQueue { ptr: self.ptr.clone() }
     }
 }
 
-struct LockedHashMap<K, V> {
-    map: HashMap<K, V>,
+struct LockedHashMap<'a, K, V> {
+    map: HashMap<'a, K, V>,
     mutex: Mutex,
     no_freeze: NoFreeze
 }
 
-impl<K: Hash + Eq, V> LockedHashMap<K, V> {
+impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V> {
     fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V> {
         LockedHashMap {
             map: HashMap::with_capacity_and_keys(k0, k1, capacity),
@@ -448,7 +448,7 @@ impl<K: Hash + Eq, V> LockedHashMap<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V: Clone> LockedHashMap<K, V> {
+impl<'a, K: Hash + Eq, V: Clone> LockedHashMap<'a, K, V> {
     fn find(&mut self, k: &K) -> Option<V> {
         unsafe {
             let _guard = self.mutex.lock_guard();
@@ -458,11 +458,11 @@ impl<K: Hash + Eq, V: Clone> LockedHashMap<K, V> {
 }
 
 /// A concurrent hash table based a single lock per instance
-pub struct ConcurrentHashMap<K, V> {
-    priv ptr: Arc<LockedHashMap<K, V>>
+pub struct ConcurrentHashMap<'a, K, V> {
+    priv ptr: Arc<LockedHashMap<'a, K, V>>
 }
 
-impl<K: Hash + Eq + Send, V: Send> ConcurrentHashMap<K, V> {
+impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V> {
     /// Create a new `ConcurrentHashMap` with the specified 128-bit hash key (`k0` and `k1`) and
     /// initial `capacity`.
     pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V> {
@@ -489,7 +489,7 @@ impl<K: Hash + Eq + Send, V: Send> ConcurrentHashMap<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V: Clone> ConcurrentHashMap<K, V> {
+impl<'a, K: Hash + Eq, V: Clone> ConcurrentHashMap<'a, K, V> {
     /// Return the value corresponding to the key via `clone`.
     ///
     /// A reference cannot be returned directly, because a lock has to be obtained and released by
@@ -502,32 +502,32 @@ impl<K: Hash + Eq, V: Clone> ConcurrentHashMap<K, V> {
     }
 }
 
-impl<K, V> Clone for ConcurrentHashMap<K, V> {
+impl<'a, K, V> Clone for ConcurrentHashMap<'a, K, V> {
     /// Return a shallow copy of the map
     fn clone(&self) -> ConcurrentHashMap<K, V> {
         ConcurrentHashMap { ptr: self.ptr.clone() }
     }
 }
 
-struct ShardMapBox<K, V> {
-    maps: Vec<LockedHashMap<K, V>>,
+struct ShardMapBox<'a, K, V> {
+    maps: Vec<'a, LockedHashMap<'a, K, V>>,
     k0: u64,
     k1: u64,
     no_freeze: NoFreeze
 }
 
-impl<K: Hash + Eq, V> ShardMapBox<K, V> {
+impl<'a, K: Hash + Eq, V> ShardMapBox<'a, K, V> {
     fn get_shard(&self, k: &K) -> uint {
         k.hash(self.k0, self.k1) as uint % self.maps.len()
     }
 }
 
 /// A concurrent hash table distributing keys across shards, with locking on a per-shard basis
-pub struct ShardMap<K, V> {
-    priv ptr: Arc<ShardMapBox<K, V>>
+pub struct ShardMap<'a, K, V> {
+    priv ptr: Arc<ShardMapBox<'a, K, V>>
 }
 
-impl<K: Hash + Eq + Send, V: Send> ShardMap<K, V> {
+impl<'a, K: Hash + Eq + Send, V: Send> ShardMap<'a, K, V> {
     /// Create a new `ShardMap` with `shards` internal hash tables, the specified 128-bit hash key
     /// (`k0` and `k1`) and an initial `capacity`.
     pub fn with_capacity_and_keys(shards: uint, k0: u64, k1: u64, capacity: uint) -> ShardMap<K, V> {
@@ -562,7 +562,7 @@ impl<K: Hash + Eq + Send, V: Send> ShardMap<K, V> {
     }
 }
 
-impl<K: Hash + Eq, V: Clone> ShardMap<K, V> {
+impl<'a, K: Hash + Eq, V: Clone> ShardMap<'a, K, V> {
     /// Return the value corresponding to the key via `clone`.
     ///
     /// A reference cannot be returned directly, because a lock has to be obtained and released by
@@ -576,9 +576,9 @@ impl<K: Hash + Eq, V: Clone> ShardMap<K, V> {
     }
 }
 
-impl<K, V> Clone for ShardMap<K, V> {
+impl<'a, K, V> Clone for ShardMap<'a, K, V> {
     /// Return a shallow copy of the map
-    fn clone(&self) -> ShardMap<K, V> {
+    fn clone(&self) -> ShardMap<'a, K, V> {
         ShardMap { ptr: self.ptr.clone() }
     }
 }

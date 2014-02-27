@@ -21,13 +21,13 @@ use iter::{Iterator, DoubleEndedIterator};
 use cmp::expect;
 use clone::Clone;
 
-pub struct Vec<T> {
+pub struct Vec<'a, T> {
     priv len: uint,
     priv cap: uint,
     priv ptr: *mut T
 }
 
-impl<T> Vec<T> {
+impl<'a, T> Vec<'a, T> {
     #[inline(always)]
     pub fn new() -> Vec<T> {
         Vec { len: 0, cap: 0, ptr: 0 as *mut T }
@@ -148,7 +148,7 @@ impl<T> Vec<T> {
     }
 }
 
-impl<T: Clone> Vec<T> {
+impl<'a, T: Clone> Vec<'a, T> {
     pub fn from_elem(length: uint, value: T) -> Vec<T> {
         unsafe {
             let mut xs = Vec::with_capacity(length);
@@ -172,7 +172,7 @@ impl<T: Clone> Vec<T> {
     }
 }
 
-impl<T> Container for Vec<T> {
+impl<'a, T> Container for Vec<'a, T> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.len
@@ -180,7 +180,7 @@ impl<T> Container for Vec<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Vec<T> {
+impl<'a, T> Drop for Vec<'a, T> {
     fn drop(&mut self) {
         unsafe {
             for x in iter(self.as_mut_slice()) {
