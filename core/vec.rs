@@ -21,9 +21,6 @@ use iter::{Iterator, DoubleEndedIterator};
 use cmp::expect;
 use clone::Clone;
 
-#[path = "../macros.rs"]
-mod macros;
-
 pub struct Vec<T> {
     priv len: uint,
     priv cap: uint,

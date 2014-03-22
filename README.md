@@ -23,8 +23,13 @@ clang -O2 -flto -o example example.bc
 
 # Macros
 
-It is currently not possible to export macros from crates, so they are provided
-in a standalone `macros.rs` module to include anywhere they are needed.
+Importing macros from crates is currently feature gated. If you wish to load
+macros in addition to normal linkage, use the following attributes:
+```rust
+#[feature(phase)];
+#[phase(syntax, link)]
+extern crate core;
+```
 
 # Freestanding usage
 
