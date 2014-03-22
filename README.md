@@ -17,7 +17,7 @@ making use of `clang`.
 
 ```
 rustc --cfg libc core/lib.rs --out-dir . -O -Z no-landing-pads
-rustc --emit-llvm example.rs -O -Z no-landing-pads -L .
+rustc --emit=bc example.rs -O -Z no-landing-pads -L .
 clang -O2 -flto -o example example.bc
 ```
 

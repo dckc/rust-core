@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 SOURCES = $(wildcard *.rs)
 BINARIES = $(patsubst %.rs,%,$(SOURCES))
 INTERMEDIATES = $(patsubst %.rs,%.bc,$(SOURCES))
@@ -5,7 +7,7 @@ INTERMEDIATES = $(patsubst %.rs,%.bc,$(SOURCES))
 all: $(BINARIES)
 
 %: %.rs core
-	rustc $< --emit-llvm --cfg libc -O -Z no-landing-pads -Z lto -L .
+	rustc $< --emit=bc --cfg libc -O -Z no-landing-pads -Z lto -L .
 	clang $@.bc -o $@ -O2 -lpthread
 	./$@
 

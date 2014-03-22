@@ -9,15 +9,13 @@
 // except according to those terms.
 
 #[no_std];
-#[feature(macro_rules)];
+#[feature(macro_rules, phase)];
 
-extern mod core;
+#[phase(syntax, link)]
+extern crate core;
 
 use core::fail::abort;
 use core::cmp::expect;
-
-#[path = "../macros.rs"]
-mod macros;
 
 #[start]
 fn main(argc: int, _: **u8) -> int {

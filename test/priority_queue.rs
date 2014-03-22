@@ -1,6 +1,6 @@
 #[no_std];
 
-extern mod core;
+extern crate core;
 
 use core::container::Container;
 use core::fail::abort;

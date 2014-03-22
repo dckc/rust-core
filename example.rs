@@ -1,6 +1,6 @@
 #[no_std];
 
-extern mod core;
+extern crate core;
 
 use core::vec::Vec;
 

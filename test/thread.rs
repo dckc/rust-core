@@ -10,7 +10,7 @@
 
 #[no_std];
 
-extern mod core;
+extern crate core;
 
 use core::clone::Clone;
 use core::thread::{spawn, spawn_detached};

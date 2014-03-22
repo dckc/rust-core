@@ -11,7 +11,7 @@
 #[no_std];
 #[feature(macro_rules)];
 
-extern mod core;
+extern crate core;
 
 use core::hash::{Hash, HashBytes, State};
 use core::fail::abort;
@@ -34,7 +34,8 @@ struct Bytes<'a>(&'a [u8]);
 
 impl<'a> HashBytes for Bytes<'a> {
     fn hash_bytes(&self, f: |&[u8]|) {
-        f(**self)
+        let Bytes(bytes) = *self;
+        f(bytes)
     }
 }
 

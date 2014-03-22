@@ -9,15 +9,13 @@
 // except according to those terms.
 
 #[no_std];
-#[feature(macro_rules)];
+#[feature(macro_rules, phase)];
 
-extern mod core;
+#[phase(syntax, link)]
+extern crate core;
 
 use core::thread::spawn;
 use core::fail::abort;
-
-#[path = "../macros.rs"]
-mod macros;
 
 thread_local!(foo, int, 5)
 
