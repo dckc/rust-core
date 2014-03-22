@@ -13,7 +13,7 @@
 use mem::transmute_mut;
 use kinds::{marker, Pod};
 use fail::{abort, assert};
-use clone::{Clone, DeepClone};
+use clone::Clone;
 use ops::{Deref, DerefMut, Drop};
 use cmp::Eq;
 use option::{Option, Some, None};
@@ -207,13 +207,6 @@ impl<T: Clone> Clone for RefCell<T> {
     fn clone(&self) -> RefCell<T> {
         let x = self.borrow();
         RefCell::new(x.get().clone())
-    }
-}
-
-impl<T: DeepClone> DeepClone for RefCell<T> {
-    fn deep_clone(&self) -> RefCell<T> {
-        let x = self.borrow();
-        RefCell::new(x.get().deep_clone())
     }
 }
 

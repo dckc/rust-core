@@ -13,7 +13,7 @@
 use mem::transmute;
 use ops::Drop;
 use cmp::{Eq, Ord};
-use clone::{Clone, DeepClone};
+use clone::Clone;
 use heap::free;
 use ptr::read_ptr;
 use option::{Option, Some, None};
@@ -78,13 +78,6 @@ impl<T> Clone for Strong<T> {
             (*self.ptr).strong += 1;
             Strong { ptr: self.ptr }
         }
-    }
-}
-
-impl<T: DeepClone> DeepClone for Strong<T> {
-    #[inline]
-    fn deep_clone(&self) -> Strong<T> {
-        Strong::new(self.borrow().deep_clone())
     }
 }
 

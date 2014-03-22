@@ -11,7 +11,7 @@
 use thread::Mutex;
 use mem::{replace, transmute};
 use kinds::{Freeze, Send, marker};
-use clone::{Clone, DeepClone};
+use clone::Clone;
 use ops::Drop;
 use cmp::{Eq, Ord};
 use atomic::{atomic_fence_acq, atomic_xadd_relaxed, atomic_xsub_rel};
@@ -71,12 +71,6 @@ impl<T> Clone for Arc<T> {
             atomic_xadd_relaxed(&mut (*self.ptr).count, 1);
             Arc { ptr: self.ptr }
         }
-    }
-}
-
-impl<T: DeepClone> DeepClone for Arc<T> {
-    fn deep_clone(&self) -> Arc<T> {
-        unsafe { Arc::new_unchecked(self.borrow().deep_clone()) }
     }
 }
 
