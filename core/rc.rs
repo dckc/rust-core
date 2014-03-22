@@ -11,9 +11,9 @@
 //! Task-local reference counted smart pointers
 
 use mem::transmute;
-use ops::Drop;
+use ops::{Deref, Drop};
 use cmp::{Eq, Ord};
-use clone::{Clone, DeepClone};
+use clone::Clone;
 use kinds::marker::NoSend;
 
 struct RcBox<T> {
@@ -40,6 +40,14 @@ impl<T> Rc<T> {
     }
 }
 
+impl<T> Deref<T> for Rc<T> {
+    /// Borrow the value contained in the reference-counted box
+    #[inline(always)]
+    fn deref<'a>(&'a self) -> &'a T {
+        unsafe { &(*self.ptr).value }
+    }
+}
+
 #[unsafe_destructor]
 impl<T> Drop for Rc<T> {
     fn drop(&mut self) {
@@ -61,13 +69,6 @@ impl<T> Clone for Rc<T> {
             (*self.ptr).count += 1;
             Rc { ptr: self.ptr }
         }
-    }
-}
-
-impl<T: DeepClone> DeepClone for Rc<T> {
-    #[inline]
-    fn deep_clone(&self) -> Rc<T> {
-        Rc::new(self.borrow().deep_clone())
     }
 }
 

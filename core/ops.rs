@@ -169,3 +169,13 @@ bitwise_impl!(u64)
 pub trait Index<Index, Result> {
     fn index(&self, index: &Index) -> Result;
 }
+
+#[lang="deref"]
+pub trait Deref<Result> {
+    fn deref<'a>(&'a self) -> &'a Result;
+}
+
+#[lang="deref_mut"]
+pub trait DerefMut<Result>: Deref<Result> {
+    fn deref_mut<'a>(&'a mut self) -> &'a mut Result;
+}
