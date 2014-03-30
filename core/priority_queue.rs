@@ -33,16 +33,16 @@ impl<'a, T, A: Allocator> Container for PriorityQueue<'a, T, A> {
 impl<'a, T: Ord> PriorityQueue<'a, T, Heap> {
     #[inline(always)]
     pub fn new() -> PriorityQueue<T, Heap> {
-        PriorityQueue::with_alloc(Heap)
+        PriorityQueue::with_alloc(&mut Heap)
     }
 
     #[inline(always)]
     pub fn with_capacity(capacity: uint) -> PriorityQueue<T, Heap> {
-        PriorityQueue::with_alloc_capacity(Heap, capacity)
+        PriorityQueue::with_alloc_capacity(&mut Heap, capacity)
     }
 }
 
-impl<T: Ord, A: Allocator> PriorityQueue<T, A> {
+impl<'a, T: Ord, A: Allocator> PriorityQueue<'a, T, A> {
     #[inline(always)]
     pub fn capacity(&self) -> uint {
         self.data.capacity()
@@ -79,11 +79,11 @@ impl<T: Ord, A: Allocator> PriorityQueue<T, A> {
         }
     }
 
-    pub fn to_vec(self) -> Vec<T, A> {
+    pub fn to_vec(self) -> Vec<'a, T, A> {
         self.data
     }
 
-    pub fn to_sorted_vec(self) -> Vec<T, A> {
+    pub fn to_sorted_vec(self) -> Vec<'a, T, A> {
         let mut q = self;
         let mut end = q.len();
         while end > 1 {
@@ -95,16 +95,16 @@ impl<T: Ord, A: Allocator> PriorityQueue<T, A> {
     }
 
     #[inline(always)]
-    pub fn with_alloc(alloc: A) -> PriorityQueue<T, A> {
+    pub fn with_alloc(alloc: &'a mut A) -> PriorityQueue<'a, T, A> {
         PriorityQueue { data: Vec::with_alloc(alloc) }
     }
 
     #[inline(always)]
-    pub fn with_alloc_capacity(alloc: A, capacity: uint) -> PriorityQueue<T, A> {
+    pub fn with_alloc_capacity(alloc: &'a mut A, capacity: uint) -> PriorityQueue<'a, T, A> {
         PriorityQueue { data: Vec::with_alloc_capacity(alloc, capacity) }
     }
 
-    pub fn from_vec(xs: Vec<T, A>) -> PriorityQueue<T, A> {
+    pub fn from_vec(xs: Vec<'a, T, A>) -> PriorityQueue<'a, T, A> {
         let mut q = PriorityQueue { data: xs };
         let mut n = q.len() / 2;
         while n > 0 {

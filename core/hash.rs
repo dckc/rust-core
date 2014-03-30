@@ -329,7 +329,8 @@ pub struct HashMap<'a, K,V,A = Heap> {
     priv k1: u64,
     priv resize_at: uint,
     priv size: uint,
-    priv buckets: Vec<'a, Option<Bucket<K, V>>, A>
+    priv buckets: Vec<'a, Option<Bucket<K, V>>, A>,
+    priv alloc: &'a mut A
 }
 
 enum SearchResult {
@@ -404,7 +405,7 @@ impl<'a, K:Hash + Eq,V,A: Allocator> HashMap<'a, K, V, A> {
         self.resize_at = resize_at(new_capacity);
 
         // FIXME: get allocator
-        let mut xs = Vec::with_alloc_capacity(Heap, new_capacity);
+        let mut xs = Vec::with_alloc_capacity(self.alloc, new_capacity);
         let mut i = 0;
         while i < new_capacity {
             xs.push(None);
@@ -566,7 +567,7 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
 
     pub fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, A> {
         let capacity = max(INITIAL_CAPACITY, capacity);
-        let mut xs = Vec::with_alloc_capacity(alloc, capacity);
+        let mut xs = Vec::with_alloc_capacity(&mut alloc, capacity);
         let mut i = 0;
         while i < capacity {
             xs.push(None);
@@ -577,7 +578,8 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
             k0: k0, k1: k1,
             resize_at: resize_at(capacity),
             size: 0,
-            buckets: xs
+            buckets: xs,
+            alloc: &mut alloc
         }
     }
 

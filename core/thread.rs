@@ -316,20 +316,20 @@ impl<'a> Drop for LockGuard<'a> {
 
 /// A pool of worker threads
 pub struct Pool<'a, A = Heap> {
-    priv queue: Queue<Option<proc()>>,
-    priv pool: Vec<Thread<()>, A>
+    priv queue: Queue<'a, Option<proc:Send()>>,
+    priv pool: Vec<'a, Thread<()>, A>
 }
 
 impl<'a> Pool<'a> {
     #[inline(always)]
     pub fn new(n_threads: uint) -> Pool {
-        Pool::with_alloc(Heap, n_threads)
+        Pool::with_alloc(&mut Heap, n_threads)
     }
 }
 
-impl<A: Allocator> Pool<A> {
+impl<'a, A: Allocator> Pool<'a, A> {
     /// Create a thread pool with `n_threads` threads.
-    pub fn with_alloc(alloc: A, n_threads: uint) -> Pool<A> {
+    pub fn with_alloc(alloc: &'a mut A, n_threads: uint) -> Pool<'a, A> {
         let queue = Queue::<Option<proc:Send()>>::new();
         let mut pool = Vec::with_alloc_capacity(alloc, n_threads);
         let mut i = 0;

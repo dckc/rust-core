@@ -192,7 +192,7 @@ impl<'a, T: Ord + Send> BlockingPriorityQueue<'a, T> {
 
 impl<'a, T> Clone for BlockingPriorityQueue<'a, T> {
     /// Return a shallow copy of the queue
-    fn clone(&self) -> BlockingPriorityQueue<T> {
+    fn clone(&self) -> BlockingPriorityQueue<'a, T> {
         BlockingPriorityQueue { ptr: self.ptr.clone() }
     }
 }
@@ -364,7 +364,7 @@ impl<'a, T: Send> BoundedQueue<'a, T> {
 
 impl<'a, T> Clone for BoundedQueue<'a, T> {
     /// Return a shallow copy of the queue
-    fn clone(&self) -> BoundedQueue<T> {
+    fn clone(&self) -> BoundedQueue<'a, T> {
         BoundedQueue { ptr: self.ptr.clone() }
     }
 }
@@ -415,7 +415,7 @@ impl<'a, T: Ord + Send> BoundedPriorityQueue<'a, T> {
 
 impl<'a, T> Clone for BoundedPriorityQueue<'a, T> {
     /// Return a shallow copy of the queue
-    fn clone(&self) -> BoundedPriorityQueue<T> {
+    fn clone(&self) -> BoundedPriorityQueue<'a, T> {
         BoundedPriorityQueue { ptr: self.ptr.clone() }
     }
 }
@@ -519,7 +519,7 @@ impl<'a, K: Hash + Eq, V: Clone, A: Allocator> ConcurrentHashMap<'a, K, V, A> {
 
 impl<'a, K, V, A: Allocator> Clone for ConcurrentHashMap<'a, K, V, A> {
     /// Return a shallow copy of the map
-    fn clone(&self) -> ConcurrentHashMap<K, V, A> {
+    fn clone(&self) -> ConcurrentHashMap<'a, K, V, A> {
         ConcurrentHashMap { ptr: self.ptr.clone() }
     }
 }
