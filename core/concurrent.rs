@@ -23,6 +23,8 @@ use thread::{Mutex, Cond, Timeout};
 use cmp::{Eq, Ord};
 use option::{Some, None, Option};
 use hash::{Hash, HashMap};
+use mem::Allocator;
+use heap::Heap;
 use vec::Vec;
 use kinds::Send;
 use kinds::marker::NoFreeze;
@@ -418,16 +420,23 @@ impl<'a, T> Clone for BoundedPriorityQueue<'a, T> {
     }
 }
 
-struct LockedHashMap<'a, K, V> {
-    map: HashMap<'a, K, V>,
+struct LockedHashMap<'a, K, V, A = Heap> {
+    map: HashMap<'a, K, V, A>,
     mutex: Mutex,
     no_freeze: NoFreeze
 }
 
-impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V> {
-    fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V> {
+impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V, Heap> {
+    #[inline(always)]
+    fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V, Heap> {
+        LockedHashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+    }
+}
+
+impl<'a, K: Hash + Eq, V, A: Allocator> LockedHashMap<'a, K, V, A> {
+    fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V, A> {
         LockedHashMap {
-            map: HashMap::with_capacity_and_keys(k0, k1, capacity),
+            map: HashMap::with_alloc_capacity_and_keys(alloc, k0, k1, capacity),
             mutex: Mutex::new(),
             no_freeze: NoFreeze
         }
@@ -448,7 +457,7 @@ impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V> {
     }
 }
 
-impl<'a, K: Hash + Eq, V: Clone> LockedHashMap<'a, K, V> {
+impl<'a, K: Hash + Eq, V: Clone, A: Allocator> LockedHashMap<'a, K, V, A> {
     fn find(&mut self, k: &K) -> Option<V> {
         unsafe {
             let _guard = self.mutex.lock_guard();
@@ -458,15 +467,21 @@ impl<'a, K: Hash + Eq, V: Clone> LockedHashMap<'a, K, V> {
 }
 
 /// A concurrent hash table based a single lock per instance
-pub struct ConcurrentHashMap<'a, K, V> {
-    priv ptr: Arc<LockedHashMap<'a, K, V>>
+pub struct ConcurrentHashMap<'a, K, V, A = Heap> {
+    priv ptr: Arc<LockedHashMap<'a, K, V, A>>
 }
 
-impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V> {
+impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V, Heap> {
+    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V, Heap> {
+        ConcurrentHashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+    }
+}
+
+impl<'a, K: Hash + Eq + Send, V: Send, A: Allocator> ConcurrentHashMap<'a, K, V, A> {
     /// Create a new `ConcurrentHashMap` with the specified 128-bit hash key (`k0` and `k1`) and
     /// initial `capacity`.
-    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V> {
-        let b = LockedHashMap::with_capacity_and_keys(k0, k1, capacity);
+    pub fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V, A> {
+        let b = LockedHashMap::with_alloc_capacity_and_keys(alloc, k0, k1, capacity);
         unsafe {
             ConcurrentHashMap { ptr: Arc::new_unchecked(b) }
         }
@@ -475,7 +490,7 @@ impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V> {
     /// Insert a key-value pair into the hash table. Return the old value corresponding to the key.
     pub fn swap(&self, k: K, v: V) -> Option<V> {
         unsafe {
-            let ptr: &mut LockedHashMap<K, V> = transmute(self.ptr.borrow());
+            let ptr: &mut LockedHashMap<K, V, A> = transmute(self.ptr.borrow());
             ptr.swap(k, v)
         }
     }
@@ -483,40 +498,40 @@ impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V> {
     /// Remove a key-value pair from the map. Return the value corresponding to the key.
     pub fn pop(&self, k: &K) -> Option<V> {
         unsafe {
-            let ptr: &mut LockedHashMap<K, V> = transmute(self.ptr.borrow());
+            let ptr: &mut LockedHashMap<K, V, A> = transmute(self.ptr.borrow());
             ptr.pop(k)
         }
     }
 }
 
-impl<'a, K: Hash + Eq, V: Clone> ConcurrentHashMap<'a, K, V> {
+impl<'a, K: Hash + Eq, V: Clone, A: Allocator> ConcurrentHashMap<'a, K, V, A> {
     /// Return the value corresponding to the key via `clone`.
     ///
     /// A reference cannot be returned directly, because a lock has to be obtained and released by
     /// the function.
     pub fn find(&self, k: &K) -> Option<V> {
         unsafe {
-            let ptr: &mut LockedHashMap<K, V> = transmute(self.ptr.borrow());
+            let ptr: &mut LockedHashMap<K, V, A> = transmute(self.ptr.borrow());
             ptr.find(k)
         }
     }
 }
 
-impl<'a, K, V> Clone for ConcurrentHashMap<'a, K, V> {
+impl<'a, K, V, A: Allocator> Clone for ConcurrentHashMap<'a, K, V, A> {
     /// Return a shallow copy of the map
-    fn clone(&self) -> ConcurrentHashMap<K, V> {
+    fn clone(&self) -> ConcurrentHashMap<K, V, A> {
         ConcurrentHashMap { ptr: self.ptr.clone() }
     }
 }
 
-struct ShardMapBox<'a, K, V> {
-    maps: Vec<'a, LockedHashMap<'a, K, V>>,
+struct ShardMapBox<'a, K, V, A = Heap> {
+    maps: Vec<'a, LockedHashMap<'a, K, V, A>, A>,
     k0: u64,
     k1: u64,
     no_freeze: NoFreeze
 }
 
-impl<'a, K: Hash + Eq, V> ShardMapBox<'a, K, V> {
+impl<'a, K: Hash + Eq, V, A: Allocator> ShardMapBox<'a, K, V, A> {
     fn get_shard(&self, k: &K) -> uint {
         k.hash(self.k0, self.k1) as uint % self.maps.len()
     }

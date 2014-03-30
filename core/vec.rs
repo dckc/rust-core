@@ -22,32 +22,42 @@ use iter::{Iterator, DoubleEndedIterator};
 use cmp::expect;
 use clone::Clone;
 
-pub struct Vec<'a, T> {
+#[cfg(libc)]
+pub struct Vec<'a, T, A = Heap> {
     priv len: uint,
     priv cap: uint,
     priv ptr: *mut T,
-    priv alloc: &'a mut Allocator
+    priv alloc: &'a mut A
 }
 
+#[cfg(not(libc))]
+pub struct Vec<'a, T, A> {
+    priv len: uint,
+    priv cap: uint,
+    priv ptr: *mut T,
+    priv alloc: &'a mut A
+}
+
+#[cfg(libc)]
 impl<'a, T> Vec<'a, T> {
-    #[cfg(libc)]
     #[inline(always)]
-    pub fn new() -> Vec<T> {
+    pub fn new() -> Vec<'a, T> {
         Vec::with_alloc(&mut Heap)
     }
 
-    #[cfg(libc)]
     #[inline(always)]
     pub fn with_capacity(capacity: uint) -> Vec<T> {
         Vec::with_alloc_capacity(&mut Heap, capacity)
     }
+}
 
+impl<'a, T, A: Allocator> Vec<'a, T, A> {
     #[inline(always)]
-    pub fn with_alloc(alloc: &mut Allocator) -> Vec<T> {
+    pub fn with_alloc(alloc: &'a mut A) -> Vec<'a, T, A> {
         Vec { len: 0, cap: 0, ptr: 0 as *mut T, alloc: alloc }
     }
 
-    pub fn with_alloc_capacity(alloc: &mut Allocator, capacity: uint) -> Vec<T> {
+    pub fn with_alloc_capacity(alloc: &'a mut A, capacity: uint) -> Vec<'a, T, A> {
         if capacity == 0 {
             Vec::with_alloc(alloc)
         } else {
@@ -61,8 +71,11 @@ impl<'a, T> Vec<'a, T> {
     }
 
     #[inline(always)]
-    pub fn get_allocator<'a>(&'a self) -> &'a &'a mut Allocator {
+    pub fn get_allocator<'a>(&'a self) -> &'a &'a mut A {
         &self.alloc
+        // unsafe {
+        //     self.alloc
+        // }
     }
 
     #[inline(always)]
@@ -156,7 +169,7 @@ impl<'a, T> Vec<'a, T> {
         unsafe { transmute(slice) }
     }
 
-    pub fn move_iter(self) -> MoveItems<T> {
+    pub fn move_iter(self) -> MoveItems<T, A> {
         unsafe {
             let iter = transmute(iter(self.as_slice()));
             let ptr = self.ptr as *mut u8;
@@ -172,8 +185,8 @@ impl<'a, T> Vec<'a, T> {
 }
 
 #[cfg(libc)]
-impl<'a, T: Clone> Vec<'a, T> {
-    pub fn from_elem(length: uint, value: T) -> Vec<T> {
+impl<'a, T: Clone> Vec<'a, T, Heap> {
+    pub fn from_elem(length: uint, value: T) -> Vec<T, Heap> {
         unsafe {
             let mut xs = Vec::with_capacity(length);
             while xs.len < length {
@@ -184,7 +197,7 @@ impl<'a, T: Clone> Vec<'a, T> {
         }
     }
 
-    pub fn from_fn(length: uint, op: |uint| -> T) -> Vec<T> {
+    pub fn from_fn(length: uint, op: |uint| -> T) -> Vec<T, Heap> {
         unsafe {
             let mut xs = Vec::with_capacity(length);
             while xs.len < length {
@@ -196,7 +209,7 @@ impl<'a, T: Clone> Vec<'a, T> {
     }
 }
 
-impl<'a, T> Container for Vec<'a, T> {
+impl<'a, T, A: Allocator> Container for Vec<'a, T, A> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.len
@@ -204,7 +217,7 @@ impl<'a, T> Container for Vec<'a, T> {
 }
 
 #[unsafe_destructor]
-impl<'a, T> Drop for Vec<'a, T> {
+impl<'a, T, A: Allocator> Drop for Vec<'a, T, A> {
     fn drop(&mut self) {
         unsafe {
             for x in iter(self.as_mut_slice()) {
@@ -215,13 +228,13 @@ impl<'a, T> Drop for Vec<'a, T> {
     }
 }
 
-pub struct MoveItems<T> {
+pub struct MoveItems<T, A> {
     priv allocation: *mut u8, // the block of memory allocated for the vector
     priv iter: Items<'static, T>,
-    priv alloc: &'static mut &'static mut Allocator
+    priv alloc: &'static mut A
 }
 
-impl<T> Iterator<T> for MoveItems<T> {
+impl<T, A: Allocator> Iterator<T> for MoveItems<T, A> {
     fn next(&mut self) -> Option<T> {
         unsafe {
             self.iter.next().map(|x| read_ptr(x))
@@ -233,7 +246,7 @@ impl<T> Iterator<T> for MoveItems<T> {
     }
 }
 
-impl<T> DoubleEndedIterator<T> for MoveItems<T> {
+impl<T, A: Allocator> DoubleEndedIterator<T> for MoveItems<T, A> {
     fn next_back(&mut self) -> Option<T> {
         unsafe {
             self.iter.next_back().map(|x| read_ptr(x))
@@ -242,7 +255,7 @@ impl<T> DoubleEndedIterator<T> for MoveItems<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for MoveItems<T> {
+impl<T, A: Allocator> Drop for MoveItems<T, A> {
     fn drop(&mut self) {
         // destroy the remaining elements
         for _x in *self {}

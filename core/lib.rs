@@ -12,7 +12,8 @@
 #[no_std];
 #[allow(ctypes)];
 #[crate_type = "rlib"];
-#[feature(macro_rules)];
+#[feature(macro_rules, default_type_params)];
+#[allow(default_type_param_usage)];
 
 #[cfg(libc)]
 pub mod arc;
