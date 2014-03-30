@@ -150,7 +150,7 @@ impl<'a, T: Send> Queue<'a, T> {
 
 impl<'a, T> Clone for Queue<'a, T> {
     /// Return a shallow copy of the queue
-    fn clone(&self) -> Queue<T> {
+    fn clone(&self) -> Queue<'a, T> {
         Queue { ptr: self.ptr.clone() }
     }
 }
