@@ -19,7 +19,7 @@ pub trait Send {}
 pub trait Freeze {}
 
 /// **P**lain **o**ld **d**ata types without move semantics.
-#[lang="pod"]
+#[lang="copy"]
 pub trait Pod {}
 
 /// Marker types are special types that are used with unsafe code to
