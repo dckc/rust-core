@@ -9,13 +9,16 @@
 // except according to those terms.
 
 #![no_std]
-#![feature(macro_rules)]
+#![feature(macro_rules, default_type_params)]
 
 extern crate core;
 
 use core::hash::{Hash, HashBytes, State};
 use core::fail::abort;
 use core::vec::Vec;
+use core::mem::size_of;
+use core::mem::Allocator;
+use core::clone::Clone;
 
 macro_rules! u8to64_le (
     ($buf:expr, $i:expr) =>
@@ -135,8 +138,35 @@ fn test_siphash() {
     }
 }
 
+// #[deriving(Clone)]
+struct MyAllocator(uint);
+
+impl Clone for MyAllocator {
+    fn clone(&self) -> MyAllocator {
+        MyAllocator(0)
+    }
+}
+
+impl Allocator for MyAllocator {
+    fn alloc(&self, size: uint) -> (*mut u8, uint) {
+        (0 as *mut u8, 0)
+    }
+
+    fn free(&self, ptr: *mut u8) {
+    }
+
+    fn zero_alloc(&self, s: uint) -> (*mut u8, uint) {
+        (0 as *mut u8, 0)
+    }
+
+    fn realloc(&self, src: *mut u8, size: uint) -> (*mut u8, uint) {
+        (0 as *mut u8, 0)
+    }
+}
+
 #[start]
 fn main(_: int, _: **u8) -> int {
     test_siphash();
+    // size_of::<Vec<u8, MyAllocator>>() as int
     0
 }
