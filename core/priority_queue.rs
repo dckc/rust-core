@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! A priority queue implemented with a binary heap
+//! A priority queue implemented with a binary Heap<'static>
 
 use container::Container;
 use vec::Vec;
@@ -18,8 +18,8 @@ use mem::{Allocator, swap};
 use heap::Heap;
 use slice;
 
-/// A priority queue implemented with a binary heap
-pub struct PriorityQueue<'a, T, A = Heap> {
+/// A priority queue implemented with a binary Heap<'static>
+pub struct PriorityQueue<'a, T, A = Heap<'static>> {
     priv data: Vec<'a, T, A>
 }
 
@@ -30,15 +30,19 @@ impl<'a, T, A: Allocator> Container for PriorityQueue<'a, T, A> {
     }
 }
 
-impl<'a, T: Ord> PriorityQueue<'a, T, Heap> {
+impl<'a, T: Ord> PriorityQueue<'a, T, Heap<'static>> {
     #[inline(always)]
-    pub fn new() -> PriorityQueue<T, Heap> {
+    pub fn new() -> PriorityQueue<T, Heap<'static>> {
+        unsafe {
         PriorityQueue::with_alloc(&mut Heap)
+    }
     }
 
     #[inline(always)]
-    pub fn with_capacity(capacity: uint) -> PriorityQueue<T, Heap> {
+    pub fn with_capacity(capacity: uint) -> PriorityQueue<T, Heap<'static>> {
+        unsafe {
         PriorityQueue::with_alloc_capacity(&mut Heap, capacity)
+    }
     }
 }
 

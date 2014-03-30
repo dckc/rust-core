@@ -106,7 +106,7 @@ impl<'a, K: HashBytes + Eq, V> LruCache<'a, K, V> {
     }
 
     /// Put a key-value pair into cache.
-    pub fn put(&mut self, k: K, v: V) {
+    pub fn put(&'a mut self, k: K, v: V) {
         let mut key_existed = false;
         let (node_ptr, node_opt) = match self.map.find_mut(&KeyRef{k: &k}) {
             Some(node) => {

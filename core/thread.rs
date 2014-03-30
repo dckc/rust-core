@@ -315,7 +315,7 @@ impl<'a> Drop for LockGuard<'a> {
 }
 
 /// A pool of worker threads
-pub struct Pool<'a, A = Heap> {
+pub struct Pool<'a, A = Heap<'static>> {
     priv queue: Queue<'a, Option<proc:Send()>>,
     priv pool: Vec<'a, Thread<()>, A>
 }
@@ -323,7 +323,9 @@ pub struct Pool<'a, A = Heap> {
 impl<'a> Pool<'a> {
     #[inline(always)]
     pub fn new(n_threads: uint) -> Pool {
+        unsafe {
         Pool::with_alloc(&mut Heap, n_threads)
+    }
     }
 }
 

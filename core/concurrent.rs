@@ -420,21 +420,23 @@ impl<'a, T> Clone for BoundedPriorityQueue<'a, T> {
     }
 }
 
-struct LockedHashMap<'a, K, V, A = Heap> {
+struct LockedHashMap<'a, K, V, A = Heap<'static>> {
     map: HashMap<'a, K, V, A>,
     mutex: Mutex,
     no_freeze: NoFreeze
 }
 
-impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V, Heap> {
+impl<'a, K: Hash + Eq, V> LockedHashMap<'a, K, V, Heap<'static>> {
     #[inline(always)]
-    fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V, Heap> {
-        LockedHashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+    fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V, Heap<'static>> {
+        unsafe {
+        LockedHashMap::with_alloc_capacity_and_keys(&mut Heap, k0, k1, capacity)
+    }
     }
 }
 
 impl<'a, K: Hash + Eq, V, A: Allocator> LockedHashMap<'a, K, V, A> {
-    fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> LockedHashMap<K, V, A> {
+    fn with_alloc_capacity_and_keys(alloc: &'a mut A, k0: u64, k1: u64, capacity: uint) -> LockedHashMap<'a, K, V, A> {
         LockedHashMap {
             map: HashMap::with_alloc_capacity_and_keys(alloc, k0, k1, capacity),
             mutex: Mutex::new(),
@@ -442,7 +444,7 @@ impl<'a, K: Hash + Eq, V, A: Allocator> LockedHashMap<'a, K, V, A> {
         }
     }
 
-    fn swap(&mut self, k: K, v: V) -> Option<V> {
+    fn swap(&'a mut self, k: K, v: V) -> Option<V> {
         unsafe {
             let _guard = self.mutex.lock_guard();
             self.map.swap(k, v)
@@ -467,20 +469,23 @@ impl<'a, K: Hash + Eq, V: Clone, A: Allocator> LockedHashMap<'a, K, V, A> {
 }
 
 /// A concurrent hash table based a single lock per instance
-pub struct ConcurrentHashMap<'a, K, V, A = Heap> {
+pub struct ConcurrentHashMap<'a, K, V, A = Heap<'static>> {
     priv ptr: Arc<LockedHashMap<'a, K, V, A>>
 }
 
-impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V, Heap> {
-    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V, Heap> {
-        ConcurrentHashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+impl<'a, K: Hash + Eq + Send, V: Send> ConcurrentHashMap<'a, K, V, Heap<'static>> {
+    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V, Heap<'static>> {
+
+        unsafe {
+        ConcurrentHashMap::with_alloc_capacity_and_keys(&mut Heap, k0, k1, capacity)
+    }
     }
 }
 
 impl<'a, K: Hash + Eq + Send, V: Send, A: Allocator> ConcurrentHashMap<'a, K, V, A> {
     /// Create a new `ConcurrentHashMap` with the specified 128-bit hash key (`k0` and `k1`) and
     /// initial `capacity`.
-    pub fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<K, V, A> {
+    pub fn with_alloc_capacity_and_keys(alloc: &'a mut A, k0: u64, k1: u64, capacity: uint) -> ConcurrentHashMap<'a, K, V, A> {
         let b = LockedHashMap::with_alloc_capacity_and_keys(alloc, k0, k1, capacity);
         unsafe {
             ConcurrentHashMap { ptr: Arc::new_unchecked(b) }
@@ -524,7 +529,7 @@ impl<'a, K, V, A: Allocator> Clone for ConcurrentHashMap<'a, K, V, A> {
     }
 }
 
-struct ShardMapBox<'a, K, V, A = Heap> {
+struct ShardMapBox<'a, K, V, A = Heap<'static>> {
     maps: Vec<'a, LockedHashMap<'a, K, V, A>, A>,
     k0: u64,
     k1: u64,

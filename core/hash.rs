@@ -324,7 +324,7 @@ struct Bucket<K,V> {
     value: V,
 }
 
-pub struct HashMap<'a, K,V,A = Heap> {
+pub struct HashMap<'a, K,V,A = Heap<'static>> {
     priv k0: u64,
     priv k1: u64,
     priv resize_at: uint,
@@ -394,18 +394,18 @@ impl<'a, K:Hash + Eq,V,A: Allocator> HashMap<'a, K, V, A> {
     /// Expand the capacity of the array to the next power of two
     /// and re-insert each of the existing buckets.
     #[inline]
-    fn expand(&mut self) {
+    fn expand(&'a mut self) {
         let new_capacity = self.buckets.len() * 2;
         self.resize(new_capacity);
     }
 
     /// Expands the capacity of the array and re-insert each of the
     /// existing buckets.
-    fn resize(&mut self, new_capacity: uint) {
+    fn resize(&'a mut self, new_capacity: uint) {
         self.resize_at = resize_at(new_capacity);
 
         // FIXME: get allocator
-        let mut xs = Vec::with_alloc_capacity(self.alloc, new_capacity);
+        let mut xs = Vec::with_alloc_capacity(&'a mut *self.alloc, new_capacity);
         let mut i = 0;
         while i < new_capacity {
             xs.push(None);
@@ -438,7 +438,7 @@ impl<'a, K:Hash + Eq,V,A: Allocator> HashMap<'a, K, V, A> {
     }
 
     #[inline]
-    fn mut_value_for_bucket<'a>(&'a mut self, idx: uint) -> &'a mut V {
+    fn mut_value_for_bucket<'b>(&'b mut self, idx: uint) -> &'b mut V {
         match self.buckets.as_mut_slice()[idx] {
             Some(ref mut bkt) => &mut bkt.value,
             None => abort()
@@ -514,10 +514,12 @@ impl<'a, K:Hash + Eq,V,A: Allocator> Container for HashMap<'a, K, V, A> {
     fn len(&self) -> uint { self.size }
 }
 
-impl<'a, K: Hash + Eq, V> HashMap<'a, K, V, Heap> {
+impl<'a, K: Hash + Eq, V> HashMap<'a, K, V, Heap<'static>> {
     #[inline(always)]
-    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, Heap> {
-        HashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, Heap<'static>> {
+        unsafe {
+        HashMap::with_alloc_capacity_and_keys(&mut Heap, k0, k1, capacity)
+    }
     }
 }
 
@@ -541,7 +543,7 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
 
     /// Insert a key-value pair from the map. If the key already had a value
     /// present in the map, that value is returned. Otherwise None is returned.
-    pub fn swap(&mut self, k: K, v: V) -> Option<V> {
+    pub fn swap(&'a mut self, k: K, v: V) -> Option<V> {
         // this could be faster.
 
         if self.size >= self.resize_at {
@@ -565,9 +567,9 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
         self.pop_internal(hash, k)
     }
 
-    pub fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, A> {
+    pub fn with_alloc_capacity_and_keys(alloc: &'a mut A, k0: u64, k1: u64, capacity: uint) -> HashMap<'a, K, V, A> {
         let capacity = max(INITIAL_CAPACITY, capacity);
-        let mut xs = Vec::with_alloc_capacity(&mut alloc, capacity);
+        let mut xs = Vec::with_alloc_capacity(alloc, capacity);
         let mut i = 0;
         while i < capacity {
             xs.push(None);
@@ -579,12 +581,12 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
             resize_at: resize_at(capacity),
             size: 0,
             buckets: xs,
-            alloc: &mut alloc
+            alloc: alloc
         }
     }
 
     /// Reserve space for at least `n` elements in the hash table.
-    pub fn reserve_at_least(&mut self, n: uint) {
+    pub fn reserve_at_least(&'a mut self, n: uint) {
         if n > self.buckets.len() {
             let buckets = n * 4 / 3 + 1;
             self.resize(next_power_of_two(buckets));
@@ -593,7 +595,7 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
 
     /// Modify and return the value corresponding to the key in the map, or
     /// insert and return a new value if it doesn't exist.
-    pub fn mangle<'a,
+    pub fn mangle<'b,
                   A>(
                   &'a mut self,
                   k: K,
@@ -628,13 +630,13 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
 
     /// Return the value corresponding to the key in the map, or insert
     /// and return the value if it doesn't exist.
-    pub fn find_or_insert<'a>(&'a mut self, k: K, v: V) -> &'a mut V {
+    pub fn find_or_insert(&'a mut self, k: K, v: V) -> &'a mut V {
         self.mangle(k, v, |_k, a| a, |_k,_v,_a| ())
     }
 
     /// Return the value corresponding to the key in the map, or create,
     /// insert, and return a new value if it doesn't exist.
-    pub fn find_or_insert_with<'a>(&'a mut self, k: K, f: |&K| -> V)
+    pub fn find_or_insert_with(&'a mut self, k: K, f: |&K| -> V)
                                -> &'a mut V {
         self.mangle(k, (), |k,_a| f(k), |_k,_v,_a| ())
     }
@@ -642,7 +644,7 @@ impl<'a, K: Hash + Eq, V, A: Allocator> HashMap<'a, K, V, A> {
     /// Insert a key-value pair into the map if the key is not already present.
     /// Otherwise, modify the existing value for the key.
     /// Returns the new or modified value for the key.
-    pub fn insert_or_update_with<'a>(
+    pub fn insert_or_update_with(
                                  &'a mut self,
                                  k: K,
                                  v: V,

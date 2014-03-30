@@ -25,7 +25,7 @@ use slice::{unchecked_get, unchecked_mut_get, unchecked_swap};
 use fail::{abort, assert};
 use option::{Option, Some, None};
 
-pub struct Deque<'a, T, A = Heap> {
+pub struct Deque<'a, T, A = Heap<'static>> {
     priv nelts: uint,
     priv lo: uint,
     priv elts: Vec<'a, T, A>
@@ -47,7 +47,7 @@ impl<'a, T> Container for Deque<'a, T> {
 }
 
 impl<'a, T> Deque<'a, T> {
-    pub fn new() -> Deque<T> {
+    pub fn new() -> Deque<'a, T> {
         Deque{ nelts: 0, lo: 0, elts: Vec::new() }
     }
 

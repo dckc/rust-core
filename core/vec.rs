@@ -21,13 +21,15 @@ use option::{Option, Some, None};
 use iter::{Iterator, DoubleEndedIterator};
 use cmp::expect;
 use clone::Clone;
+use kinds::marker::ContravariantLifetime;
 
 #[cfg(libc)]
-pub struct Vec<'a, T, A = Heap> {
+pub struct Vec<'a, T, A = Heap<'static>> {
     priv len: uint,
     priv cap: uint,
     priv ptr: *mut T,
-    priv alloc: &'a mut A
+    priv alloc: &'a mut A,
+    /*lifetime: ContravariantLifetime<'a>*/
 }
 
 #[cfg(not(libc))]
@@ -35,29 +37,34 @@ pub struct Vec<'a, T, A> {
     priv len: uint,
     priv cap: uint,
     priv ptr: *mut T,
-    priv alloc: &'a mut A
+    priv alloc: &'a mut A,
+    /*lifetime: ContravariantLifetime<'a>*/
 }
 
 #[cfg(libc)]
 impl<'a, T> Vec<'a, T> {
     #[inline(always)]
-    pub fn new() -> Vec<'a, T> {
-        Vec::with_alloc(&mut Heap)
+    pub fn new() -> Vec<'static, T> {
+        unsafe {
+        Vec::with_alloc(&'static mut Heap)
+    }
     }
 
     #[inline(always)]
-    pub fn with_capacity(capacity: uint) -> Vec<T> {
-        Vec::with_alloc_capacity(&mut Heap, capacity)
+    pub fn with_capacity(capacity: uint) -> Vec<'static, T> {
+        unsafe {
+        Vec::with_alloc_capacity(&'static mut Heap, capacity)
+    }
     }
 }
 
 impl<'a, T, A: Allocator> Vec<'a, T, A> {
     #[inline(always)]
-    pub fn with_alloc(alloc: &'a mut A) -> Vec<'a, T, A> {
-        Vec { len: 0, cap: 0, ptr: 0 as *mut T, alloc: alloc }
+    pub fn with_alloc<'b>(alloc: &'b mut A) -> Vec<'b, T, A> {
+        Vec { len: 0, cap: 0, ptr: 0 as *mut T, alloc: alloc, /*lifetime: ContravariantLifetime::<'b>*/ }
     }
 
-    pub fn with_alloc_capacity(alloc: &'a mut A, capacity: uint) -> Vec<'a, T, A> {
+    pub fn with_alloc_capacity<'b>(alloc: &'b mut A, capacity: uint) -> Vec<'b, T, A> {
         if capacity == 0 {
             Vec::with_alloc(alloc)
         } else {
@@ -66,7 +73,7 @@ impl<'a, T, A: Allocator> Vec<'a, T, A> {
                 out_of_memory();
             }
             let (ptr, _) = unsafe { alloc.alloc(size) };
-            Vec { len: 0, cap: capacity, ptr: ptr as *mut T, alloc: alloc }
+            Vec { len: 0, cap: capacity, ptr: ptr as *mut T, alloc: alloc, /*lifetime: ContravariantLifetime::<'b>*/ }
         }
     }
 
@@ -185,8 +192,8 @@ impl<'a, T, A: Allocator> Vec<'a, T, A> {
 }
 
 #[cfg(libc)]
-impl<'a, T: Clone> Vec<'a, T, Heap> {
-    pub fn from_elem(length: uint, value: T) -> Vec<T, Heap> {
+impl<'a, T: Clone> Vec<'a, T, Heap<'static>> {
+    pub fn from_elem(length: uint, value: T) -> Vec<'static, T, Heap<'static>> {
         unsafe {
             let mut xs = Vec::with_capacity(length);
             while xs.len < length {
@@ -197,7 +204,7 @@ impl<'a, T: Clone> Vec<'a, T, Heap> {
         }
     }
 
-    pub fn from_fn(length: uint, op: |uint| -> T) -> Vec<T, Heap> {
+    pub fn from_fn(length: uint, op: |uint| -> T) -> Vec<'static, T, Heap<'static>> {
         unsafe {
             let mut xs = Vec::with_capacity(length);
             while xs.len < length {

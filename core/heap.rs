@@ -10,6 +10,7 @@
 
 use fail::out_of_memory;
 use mem::Allocator;
+use kinds::marker::ContravariantLifetime;
 
 mod detail {
     extern {
@@ -70,9 +71,13 @@ pub unsafe fn realloc(ptr: *mut u8, size: uint) -> *mut u8 {
     }
 }
 
-pub struct Heap;
+pub struct Heap<'a> {
+    lifetime: ContravariantLifetime<'a>
+}
 
-impl Allocator for Heap {
+pub static mut Heap: Heap<'static> = Heap { lifetime: ContravariantLifetime::<'static> };
+
+impl Allocator for Heap<'static> {
     unsafe fn alloc(&mut self, size: uint) -> (*mut u8, uint) {
         (alloc(size), size)
     }
