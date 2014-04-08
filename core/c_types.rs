@@ -13,6 +13,8 @@
 // - x86_64-linux-gnu
 // - arm-linux-gnueabi
 
+#![allow(non_camel_case_types)]
+
 pub type c_short = i16;
 pub type c_ushort = u16;
 
