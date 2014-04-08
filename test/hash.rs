@@ -8,8 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[no_std];
-#[feature(macro_rules)];
+#![no_std]
+#![feature(macro_rules)]
 
 extern crate core;
 
