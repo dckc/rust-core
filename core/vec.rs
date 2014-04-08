@@ -22,9 +22,9 @@ use cmp::expect;
 use clone::Clone;
 
 pub struct Vec<T> {
-    priv len: uint,
-    priv cap: uint,
-    priv ptr: *mut T
+    len: uint,
+    cap: uint,
+    ptr: *mut T
 }
 
 impl<T> Vec<T> {
@@ -192,8 +192,8 @@ impl<T> Drop for Vec<T> {
 }
 
 pub struct MoveItems<T> {
-    priv allocation: *mut u8, // the block of memory allocated for the vector
-    priv iter: Items<'static, T>
+    allocation: *mut u8, // the block of memory allocated for the vector
+    iter: Items<'static, T>
 }
 
 impl<T> Iterator<T> for MoveItems<T> {

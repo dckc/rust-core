@@ -20,9 +20,9 @@ use option::{Option, Some, None};
 
 /// A mutable memory location that admits only `Pod` data.
 pub struct Cell<T> {
-    priv value: T,
-    priv invariant: marker::InvariantType<T>,
-    priv no_freeze: marker::NoFreeze,
+    value: T,
+    invariant: marker::InvariantType<T>,
+    no_freeze: marker::NoFreeze,
 }
 
 impl<T: Copy> Cell<T> {
@@ -58,11 +58,11 @@ impl<T: Copy> Clone for Cell<T> {
 
 /// A mutable memory location with dynamically checked borrow rules
 pub struct RefCell<T> {
-    priv value: T,
-    priv borrow: BorrowFlag,
-    priv invariant: marker::InvariantType<T>,
-    priv no_freeze: marker::NoFreeze,
-    priv no_copy: marker::NoCopy,
+    value: T,
+    borrow: BorrowFlag,
+    invariant: marker::InvariantType<T>,
+    no_freeze: marker::NoFreeze,
+    no_copy: marker::NoCopy,
 }
 
 // Values [1, MAX-1] represent the number of `Ref` active
@@ -227,7 +227,7 @@ impl<T: Eq> Eq for RefCell<T> {
 
 /// Wraps a borrowed reference to a value in a `RefCell` box.
 pub struct Ref<'b, T> {
-    priv parent: &'b RefCell<T>
+    parent: &'b RefCell<T>
 }
 
 #[unsafe_destructor]
@@ -255,7 +255,7 @@ impl<'b, T> Deref<T> for Ref<'b, T> {
 
 /// Wraps a mutable borrowed reference to a value in a `RefCell` box.
 pub struct RefMut<'b, T> {
-    priv parent: &'b mut RefCell<T>
+    parent: &'b mut RefCell<T>
 }
 
 #[unsafe_destructor]

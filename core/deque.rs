@@ -25,9 +25,9 @@ use fail::{abort, assert};
 use option::{Option, Some, None};
 
 pub struct Deque<T> {
-    priv nelts: uint,
-    priv lo: uint,
-    priv elts: Vec<T>
+    nelts: uint,
+    lo: uint,
+    elts: Vec<T>
 }
 
 fn raw_index(lo: uint, len: uint, index: uint) -> uint {

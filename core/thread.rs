@@ -77,7 +77,7 @@ static PTHREAD_MUTEX_ERRORCHECK: c_int = 2;
 
 /// An owned thread type, joined in the destructor.
 pub struct Thread<A> {
-    priv thread: pthread_t
+    thread: pthread_t
 }
 
 extern "C" fn shim(ptr: *mut u8) -> *mut u8 {
@@ -156,7 +156,7 @@ pub fn deschedule() {
 }
 
 pub struct Mutex {
-    priv mutex: pthread_mutex_t
+    mutex: pthread_mutex_t
 }
 
 impl Mutex {
@@ -226,7 +226,7 @@ impl Drop for Mutex {
 }
 
 pub struct Cond {
-    priv cond: pthread_cond_t
+    cond: pthread_cond_t
 }
 
 impl Cond {
@@ -301,7 +301,7 @@ impl Drop for Cond {
 
 /// A scoped lock taking ownership of a mutex
 pub struct LockGuard<'a> {
-    priv mutex: &'a mut Mutex
+    mutex: &'a mut Mutex
 }
 
 #[unsafe_destructor]
@@ -315,8 +315,8 @@ impl<'a> Drop for LockGuard<'a> {
 
 /// A pool of worker threads
 pub struct Pool {
-    priv queue: Queue<Option<proc:Send()>>,
-    priv pool: Vec<Thread<()>>
+    queue: Queue<Option<proc:Send()>>,
+    pool: Vec<Thread<()>>
 }
 
 impl Pool {

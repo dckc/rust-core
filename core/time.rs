@@ -18,7 +18,7 @@ static CLOCK_MONOTONIC: clockid_t = 1;
 static TIMER_ABSTIME: c_int = 1;
 
 pub struct Time {
-    priv time: timespec
+    time: timespec
 }
 
 impl Time {

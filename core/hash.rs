@@ -324,11 +324,11 @@ struct Bucket<K,V> {
 }
 
 pub struct HashMap<K,V> {
-    priv k0: u64,
-    priv k1: u64,
-    priv resize_at: uint,
-    priv size: uint,
-    priv buckets: Vec<Option<Bucket<K, V>>>
+    k0: u64,
+    k1: u64,
+    resize_at: uint,
+    size: uint,
+    buckets: Vec<Option<Bucket<K, V>>>
 }
 
 enum SearchResult {

@@ -19,8 +19,8 @@ use cmp::{Ord, Ordering, Equal, Less, Greater};
 use kinds::marker::ContravariantLifetime;
 
 pub struct Slice<T> {
-    data: *T,
-    len: uint
+    pub data: *T,
+    pub len: uint
 }
 
 pub fn bsearch<T: Ord>(xs: &[T], value: &T) -> Option<uint> {
@@ -180,9 +180,9 @@ macro_rules! iterator {
     (struct $name:ident -> $ptr:ty, $elem:ty) => {
         /// An iterator for iterating over a slice.
         pub struct $name<'a, T> {
-            priv ptr: $ptr,
-            priv end: $ptr,
-            priv lifetime: ContravariantLifetime<'a>
+            ptr: $ptr,
+            end: $ptr,
+            lifetime: ContravariantLifetime<'a>
         }
 
         impl<'a, T> Iterator<$elem> for $name<'a, T> {

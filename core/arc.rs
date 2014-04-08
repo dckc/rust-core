@@ -23,7 +23,7 @@ struct ArcBox<T> {
 
 #[unsafe_no_drop_flag]
 pub struct Arc<T> {
-    priv ptr: *mut ArcBox<T>
+    ptr: *mut ArcBox<T>
 }
 
 impl<T: Send + Freeze> Arc<T> {
@@ -109,7 +109,7 @@ struct MutexArcBox<T> {
 }
 
 pub struct MutexArc<T> {
-    priv ptr: Arc<MutexArcBox<T>>
+    ptr: Arc<MutexArcBox<T>>
 }
 
 impl<T: Send> MutexArc<T> {

@@ -19,7 +19,7 @@ use slice;
 
 /// A priority queue implemented with a binary heap
 pub struct PriorityQueue<T> {
-    priv data: Vec<T>
+    data: Vec<T>
 }
 
 impl<T> Container for PriorityQueue<T> {

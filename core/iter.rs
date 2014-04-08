@@ -55,7 +55,7 @@ pub trait DoubleEndedIterator<A>: Iterator<A> {
 
 #[deriving(Clone)]
 pub struct Invert<T> {
-    priv iter: T
+    iter: T
 }
 
 impl<A, T: DoubleEndedIterator<A>> Iterator<A> for Invert<T> {

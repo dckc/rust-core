@@ -117,7 +117,7 @@ impl<T> Clone for QueuePtr<T> {
 
 /// An unbounded, blocking concurrent queue
 pub struct Queue<T> {
-    priv ptr: QueuePtr<Deque<T>>
+    ptr: QueuePtr<Deque<T>>
 }
 
 impl<T: Send> Queue<T> {
@@ -157,7 +157,7 @@ impl<T> Clone for Queue<T> {
 
 /// An unbounded, blocking concurrent priority queue
 pub struct BlockingPriorityQueue<T> {
-    priv ptr: QueuePtr<PriorityQueue<T>>
+    ptr: QueuePtr<PriorityQueue<T>>
 }
 
 impl<T: Ord + Send> BlockingPriorityQueue<T> {
@@ -318,7 +318,7 @@ impl<T> Clone for BoundedQueuePtr<T> {
 
 /// A bounded, blocking concurrent queue
 pub struct BoundedQueue<T> {
-    priv ptr: BoundedQueuePtr<Deque<T>>
+    ptr: BoundedQueuePtr<Deque<T>>
 }
 
 impl<T: Send> BoundedQueue<T> {
@@ -369,7 +369,7 @@ impl<T> Clone for BoundedQueue<T> {
 
 /// A bounded, blocking concurrent priority queue
 pub struct BoundedPriorityQueue<T> {
-    priv ptr: BoundedQueuePtr<PriorityQueue<T>>
+    ptr: BoundedQueuePtr<PriorityQueue<T>>
 }
 
 impl<T: Ord + Send> BoundedPriorityQueue<T> {
@@ -459,7 +459,7 @@ impl<K: Hash + Eq, V: Clone> LockedHashMap<K, V> {
 
 /// A concurrent hash table based a single lock per instance
 pub struct ConcurrentHashMap<K, V> {
-    priv ptr: Arc<LockedHashMap<K, V>>
+    ptr: Arc<LockedHashMap<K, V>>
 }
 
 impl<K: Hash + Eq + Send, V: Send> ConcurrentHashMap<K, V> {
@@ -524,7 +524,7 @@ impl<K: Hash + Eq, V> ShardMapBox<K, V> {
 
 /// A concurrent hash table distributing keys across shards, with locking on a per-shard basis
 pub struct ShardMap<K, V> {
-    priv ptr: Arc<ShardMapBox<K, V>>
+    ptr: Arc<ShardMapBox<K, V>>
 }
 
 impl<K: Hash + Eq + Send, V: Send> ShardMap<K, V> {

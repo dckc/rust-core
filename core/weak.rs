@@ -28,7 +28,7 @@ struct RcBox<T> {
 
 #[unsafe_no_drop_flag]
 pub struct Strong<T> {
-    priv ptr: *mut RcBox<T>
+    ptr: *mut RcBox<T>
 }
 
 impl<T> Strong<T> {
@@ -112,7 +112,7 @@ impl<T: Ord> Ord for Strong<T> {
 
 #[unsafe_no_drop_flag]
 pub struct Weak<T> {
-    priv ptr: *mut RcBox<T>
+    ptr: *mut RcBox<T>
 }
 
 impl<T> Weak<T> {
