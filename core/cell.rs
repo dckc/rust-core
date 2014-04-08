@@ -177,30 +177,6 @@ impl<T> RefCell<T> {
         let mut ptr = self.borrow_mut();
         blk(ptr.get())
     }
-
-    /// Sets the value, replacing what was there.
-    ///
-    /// # Failure
-    ///
-    /// Aborts if the value is currently borrowed.
-    #[inline]
-    pub fn set(&self, value: T) {
-        let mut reference = self.borrow_mut();
-        *reference.get() = value
-    }
-}
-
-impl<T:Clone> RefCell<T> {
-    /// Returns a copy of the contained value.
-    ///
-    /// # Failure
-    ///
-    /// Aborts if the value is currently mutably borrowed.
-    #[inline]
-    pub fn get(&self) -> T {
-        let reference = self.borrow();
-        (*reference.get()).clone()
-    }
 }
 
 impl<T: Clone> Clone for RefCell<T> {
