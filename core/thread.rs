@@ -315,14 +315,14 @@ impl<'a> Drop for LockGuard<'a> {
 
 /// A pool of worker threads
 pub struct Pool {
-    queue: Queue<Option<proc:Send()>>,
+    queue: Queue<Option<proc():Send>>,
     pool: Vec<Thread<()>>
 }
 
 impl Pool {
     /// Create a thread pool with `n_threads` threads.
     pub fn new(n_threads: uint) -> Pool {
-        let queue: Queue<Option<proc:Send()>> = Queue::new();
+        let queue: Queue<Option<proc():Send>> = Queue::new();
         let mut pool = Vec::with_capacity(n_threads);
         let mut i = 0;
         while i < n_threads {
@@ -342,7 +342,7 @@ impl Pool {
     }
 
     /// Submit a task to the thread pool. They are run in FIFO order to completion.
-    pub fn submit(&self, task: proc:Send()) {
+    pub fn submit(&self, task: proc():Send) {
         self.queue.push(Some(task))
     }
 }
