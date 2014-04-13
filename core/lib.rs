@@ -42,7 +42,6 @@ pub mod macros;
 pub mod mem;
 pub mod ops;
 pub mod option;
-#[cfg(libc)]
 pub mod priority_queue;
 pub mod ptr;
 pub mod slice;

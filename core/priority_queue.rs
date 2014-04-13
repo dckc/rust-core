@@ -15,23 +15,31 @@ use vec::Vec;
 use cmp::Ord;
 use option::{Option, Some, None};
 use mem::{Allocator, swap};
-use heap::Heap;
 use slice;
 use cell::RefCell;
+#[cfg(libc)]
+use heap::Heap;
 
 /// A priority queue implemented with a binary Heap
+#[cfg(libc)]
 pub struct PriorityQueue<T, A = Heap> {
     data: Vec<T, A>
 }
 
-impl<T, A: Allocator> Container for PriorityQueue<T, A> {
+#[cfg(not(libc))]
+pub struct PriorityQueue<T, A> {
+    data: Vec<T, A>
+}
+
+impl<T, A> Container for PriorityQueue<T, A> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.data.len()
     }
 }
 
-impl<T: Ord> PriorityQueue<T, Heap> {
+#[cfg(libc)]
+impl<T: Ord> PriorityQueue<T> {
     #[inline(always)]
     pub fn new<'b>() -> PriorityQueue<T, Heap> {
         PriorityQueue::with_alloc(Heap)
