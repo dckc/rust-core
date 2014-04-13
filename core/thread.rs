@@ -15,11 +15,13 @@ use time::Time;
 use fail::{EBUSY, ETIMEDOUT, abort, assert};
 use ops::Drop;
 use kinds::Send;
-use mem::{forget, uninit, transmute};
+use mem::{Allocator, forget, uninit, transmute};
 use concurrent::Queue;
 use vec::Vec;
 use option::{Option, Some, None};
 use clone::Clone;
+use heap::Heap;
+use cell::RefCell;
 
 #[deriving(Eq, Clone)]
 pub enum TimeoutStatus {
@@ -314,16 +316,23 @@ impl<'a> Drop for LockGuard<'a> {
 }
 
 /// A pool of worker threads
-pub struct Pool {
+pub struct Pool<A = Heap> {
     queue: Queue<Option<proc():Send>>,
-    pool: Vec<Thread<()>>
+    pool: Vec<Thread<()>, A>
 }
 
 impl Pool {
-    /// Create a thread pool with `n_threads` threads.
+    #[inline(always)]
     pub fn new(n_threads: uint) -> Pool {
+        unsafe {Pool::with_alloc(Heap, n_threads)}
+    }
+}
+
+impl<A: Allocator> Pool<A> {
+    /// Create a thread pool with `n_threads` threads.
+    pub fn with_alloc(alloc: A, n_threads: uint) -> Pool<A> {
         let queue: Queue<Option<proc():Send>> = Queue::new();
-        let mut pool = Vec::with_capacity(n_threads);
+        let mut pool = Vec::with_alloc_capacity(alloc, n_threads);
         let mut i = 0;
         while i < n_threads {
             let send_queue = queue.clone();
@@ -347,7 +356,8 @@ impl Pool {
     }
 }
 
-impl Drop for Pool {
+#[unsafe_destructor]
+impl<A: Allocator> Drop for Pool<A> {
     fn drop(&mut self) {
         let mut i = 0;
         while i < self.pool.len() {

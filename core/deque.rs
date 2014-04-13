@@ -16,18 +16,19 @@
 // non-nullable pointers.
 
 use container::Container;
-use mem::move_val_init;
+use mem::{Allocator, move_val_init};
 use ptr::read_ptr;
 use ops::Drop;
 use vec::Vec;
+use heap::Heap;
 use slice::{unchecked_get, unchecked_mut_get, unchecked_swap};
 use fail::{abort, assert};
 use option::{Option, Some, None};
 
-pub struct Deque<T> {
+pub struct Deque<T, A = Heap> {
     nelts: uint,
     lo: uint,
-    elts: Vec<T>
+    elts: Vec<T, A>
 }
 
 fn raw_index(lo: uint, len: uint, index: uint) -> uint {
@@ -169,7 +170,7 @@ impl<T> Drop for Deque<T> {
     }
 }
 
-fn grow<T>(nelts: uint, loptr: &mut uint, elts: &mut Vec<T>) {
+fn grow<T, A: Allocator>(nelts: uint, loptr: &mut uint, elts: &mut Vec<T, A>) {
     assert(nelts == elts.capacity());
     let lo = *loptr;
     let mut newlen = nelts * 2;

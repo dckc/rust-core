@@ -8,28 +8,42 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! A priority queue implemented with a binary heap
+//! A priority queue implemented with a binary Heap
 
 use container::Container;
 use vec::Vec;
 use cmp::Ord;
 use option::{Option, Some, None};
-use mem::swap;
+use mem::{Allocator, swap};
+use heap::Heap;
 use slice;
+use cell::RefCell;
 
-/// A priority queue implemented with a binary heap
-pub struct PriorityQueue<T> {
-    data: Vec<T>
+/// A priority queue implemented with a binary Heap
+pub struct PriorityQueue<T, A = Heap> {
+    data: Vec<T, A>
 }
 
-impl<T> Container for PriorityQueue<T> {
+impl<T, A: Allocator> Container for PriorityQueue<T, A> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.data.len()
     }
 }
 
-impl<T: Ord> PriorityQueue<T> {
+impl<T: Ord> PriorityQueue<T, Heap> {
+    #[inline(always)]
+    pub fn new<'b>() -> PriorityQueue<T, Heap> {
+        PriorityQueue::with_alloc(Heap)
+    }
+
+    #[inline(always)]
+    pub fn with_capacity(capacity: uint) -> PriorityQueue<T, Heap> {
+        PriorityQueue::with_alloc_capacity(Heap, capacity)
+    }
+}
+
+impl<T: Ord, A: Allocator> PriorityQueue<T, A> {
     #[inline(always)]
     pub fn capacity(&self) -> uint {
         self.data.capacity()
@@ -66,11 +80,11 @@ impl<T: Ord> PriorityQueue<T> {
         }
     }
 
-    pub fn to_vec(self) -> Vec<T> {
+    pub fn to_vec(self) -> Vec<T, A> {
         self.data
     }
 
-    pub fn to_sorted_vec(self) -> Vec<T> {
+    pub fn to_sorted_vec(self) -> Vec<T, A> {
         let mut q = self;
         let mut end = q.len();
         while end > 1 {
@@ -82,16 +96,16 @@ impl<T: Ord> PriorityQueue<T> {
     }
 
     #[inline(always)]
-    pub fn new() -> PriorityQueue<T> {
-        PriorityQueue { data: Vec::new() }
+    pub fn with_alloc(alloc: A) -> PriorityQueue<T, A> {
+        PriorityQueue { data: Vec::with_alloc(alloc) }
     }
 
     #[inline(always)]
-    pub fn with_capacity(capacity: uint) -> PriorityQueue<T> {
-        PriorityQueue { data: Vec::with_capacity(capacity) }
+    pub fn with_alloc_capacity(alloc: A, capacity: uint) -> PriorityQueue<T, A> {
+        PriorityQueue { data: Vec::with_alloc_capacity(alloc, capacity) }
     }
 
-    pub fn from_vec(xs: Vec<T>) -> PriorityQueue<T> {
+    pub fn from_vec(xs: Vec<T, A>) -> PriorityQueue<T, A> {
         let mut q = PriorityQueue { data: xs };
         let mut n = q.len() / 2;
         while n > 0 {

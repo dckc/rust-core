@@ -15,7 +15,11 @@ use option::{None, Option, Some};
 use fail::abort;
 use cmp::{Eq, max};
 use vec::Vec;
-use mem::{replace, size_of};
+use mem::{Allocator, replace, size_of, transmute};
+use cell::RefCell;
+use clone::Clone;
+#[cfg(libc)]
+use heap::Heap;
 
 pub trait Hash {
     fn hash(&self, k0: u64, k1: u64) -> u64;
@@ -323,12 +327,22 @@ struct Bucket<K,V> {
     value: V,
 }
 
-pub struct HashMap<K,V> {
+#[cfg(libc)]
+pub struct HashMap<K,V,A = Heap> {
     k0: u64,
     k1: u64,
     resize_at: uint,
     size: uint,
-    buckets: Vec<Option<Bucket<K, V>>>
+    buckets: Vec<Option<Bucket<K, V>>, A>,
+}
+
+#[cfg(not(libc))]
+pub struct HashMap<K,V,A> {
+    k0: u64,
+    k1: u64,
+    resize_at: uint,
+    size: uint,
+    buckets: Vec<Option<Bucket<K, V>>, A>,
 }
 
 enum SearchResult {
@@ -340,7 +354,7 @@ fn resize_at(capacity: uint) -> uint {
     (capacity * 3) / 4
 }
 
-impl<K:Hash + Eq,V> HashMap<K, V> {
+impl<K:Hash + Eq,V,A: Allocator> HashMap<K, V, A> {
     #[inline(always)]
     fn to_bucket(&self, h: uint) -> uint {
         h % self.buckets.len()
@@ -402,7 +416,8 @@ impl<K:Hash + Eq,V> HashMap<K, V> {
     fn resize(&mut self, new_capacity: uint) {
         self.resize_at = resize_at(new_capacity);
 
-        let mut xs = Vec::with_capacity(new_capacity);
+        let mut xs = Vec::with_alloc_capacity(self.buckets.alloc.clone(), new_capacity);
+
         let mut i = 0;
         while i < new_capacity {
             xs.push(None);
@@ -435,7 +450,7 @@ impl<K:Hash + Eq,V> HashMap<K, V> {
     }
 
     #[inline]
-    fn mut_value_for_bucket<'a>(&'a mut self, idx: uint) -> &'a mut V {
+    fn mut_value_for_bucket<'b>(&'b mut self, idx: uint) -> &'b mut V {
         match self.buckets.as_mut_slice()[idx] {
             Some(ref mut bkt) => &mut bkt.value,
             None => abort()
@@ -506,12 +521,20 @@ impl<K:Hash + Eq,V> HashMap<K, V> {
     }
 }
 
-impl<K:Hash + Eq,V> Container for HashMap<K, V> {
+impl<K:Hash + Eq,V,A: Allocator> Container for HashMap<K, V, A> {
     /// Return the number of elements in the map
     fn len(&self) -> uint { self.size }
 }
 
-impl<K: Hash + Eq, V> HashMap<K, V> {
+#[cfg(libc)]
+impl<K: Hash + Eq, V> HashMap<K, V, Heap> {
+    #[inline(always)]
+    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, Heap> {
+        HashMap::with_alloc_capacity_and_keys(Heap, k0, k1, capacity)
+    }
+}
+
+impl<K: Hash + Eq, V, A: Allocator> HashMap<K, V, A> {
     /// Return a reference to the value corresponding to the key
     pub fn find<'a>(&'a self, k: &K) -> Option<&'a V> {
         match self.bucket_for_key(k) {
@@ -555,9 +578,9 @@ impl<K: Hash + Eq, V> HashMap<K, V> {
         self.pop_internal(hash, k)
     }
 
-    pub fn with_capacity_and_keys(k0: u64, k1: u64, capacity: uint) -> HashMap<K, V> {
+    pub fn with_alloc_capacity_and_keys(alloc: A, k0: u64, k1: u64, capacity: uint) -> HashMap<K, V, A> {
         let capacity = max(INITIAL_CAPACITY, capacity);
-        let mut xs = Vec::with_capacity(capacity);
+        let mut xs = Vec::with_alloc_capacity(alloc, capacity);
         let mut i = 0;
         while i < capacity {
             xs.push(None);
@@ -568,7 +591,8 @@ impl<K: Hash + Eq, V> HashMap<K, V> {
             k0: k0, k1: k1,
             resize_at: resize_at(capacity),
             size: 0,
-            buckets: xs
+            buckets: xs,
+            // alloc: alloc
         }
     }
 

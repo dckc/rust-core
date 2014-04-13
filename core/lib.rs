@@ -8,11 +8,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![crate_id = "core"]
-#![no_std]
-#![allow(ctypes)]
-#![crate_type = "rlib"]
-#![feature(macro_rules)]
+#[crate_id = "core"];
+#[no_std];
+#[allow(ctypes)];
+#[crate_type = "rlib"];
+#[feature(macro_rules, default_type_params)];
+#[allow(default_type_param_usage)];
 
 #[cfg(libc)]
 pub mod arc;
@@ -31,7 +32,6 @@ pub mod cmp;
 pub mod concurrent;
 pub mod container;
 pub mod fail;
-#[cfg(libc)]
 pub mod hash;
 #[cfg(libc)]
 pub mod io;
@@ -52,7 +52,6 @@ pub mod str;
 pub mod thread;
 #[cfg(libc)]
 pub mod time;
-#[cfg(libc)]
 pub mod vec;
 
 pub mod uint;
