@@ -20,12 +20,21 @@ use mem::{Allocator, move_val_init};
 use ptr::read_ptr;
 use ops::Drop;
 use vec::Vec;
-use heap::Heap;
 use slice::{unchecked_get, unchecked_mut_get, unchecked_swap};
 use fail::{abort, assert};
 use option::{Option, Some, None};
+#[cfg(libc)]
+use heap::Heap;
 
+#[cfg(libc)]
 pub struct Deque<T, A = Heap> {
+    nelts: uint,
+    lo: uint,
+    elts: Vec<T, A>
+}
+
+#[cfg(not(libc))]
+pub struct Deque<T, A> {
     nelts: uint,
     lo: uint,
     elts: Vec<T, A>
@@ -39,20 +48,31 @@ fn raw_index(lo: uint, len: uint, index: uint) -> uint {
     }
 }
 
-impl<T> Container for Deque<T> {
+impl<T, A> Container for Deque<T, A> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.nelts
     }
 }
 
+#[cfg(libc)]
 impl<T> Deque<T> {
     pub fn new() -> Deque<T> {
-        Deque{ nelts: 0, lo: 0, elts: Vec::new() }
+        Deque::with_alloc(Heap)
     }
 
     pub fn with_capacity(capacity: uint) -> Deque<T> {
-        Deque{ nelts: 0, lo: 0, elts: Vec::with_capacity(capacity) }
+        Deque::with_alloc_capacity(Heap, capacity)
+    }
+}
+
+impl <T, A: Allocator> Deque<T, A> {
+    pub fn with_alloc(alloc: A) -> Deque<T, A> {
+        Deque{ nelts: 0, lo: 0, elts: Vec::with_alloc(alloc) }
+    }
+
+    pub fn with_alloc_capacity(alloc: A, capacity: uint) -> Deque<T, A> {
+        Deque{ nelts: 0, lo: 0, elts: Vec::with_alloc_capacity(alloc, capacity) }
     }
 
     #[inline(always)]
@@ -153,7 +173,7 @@ impl<T> Deque<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Deque<T> {
+impl<T, A: Allocator> Drop for Deque<T, A> {
     fn drop(&mut self) {
         // Make sure the Vec destructor isn't going to ruin our day
         assert(self.elts.len() == 0);

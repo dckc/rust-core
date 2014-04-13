@@ -22,7 +22,7 @@ pub mod rc;
 pub mod weak;
 
 pub mod atomic;
-#[cfg(libc)]
+pub mod default;
 pub mod deque;
 pub mod cell;
 pub mod char;
