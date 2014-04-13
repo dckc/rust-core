@@ -42,16 +42,12 @@ pub struct Vec<T, A> {
 impl<T> Vec<T> {
     #[inline(always)]
     pub fn new() -> Vec<T> {
-        unsafe {
         Vec::with_alloc(Heap)
-    }
     }
 
     #[inline(always)]
     pub fn with_capacity(capacity: uint) -> Vec<T> {
-        unsafe {
         Vec::with_alloc_capacity(Heap, capacity)
-    }
     }
 }
 
