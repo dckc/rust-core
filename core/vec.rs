@@ -199,7 +199,7 @@ impl<T: Clone> Vec<T, Heap> {
     }
 }
 
-impl<T, A: Allocator> Container for Vec<T, A> {
+impl<T, A> Container for Vec<T, A> {
     #[inline(always)]
     fn len(&self) -> uint {
         self.len

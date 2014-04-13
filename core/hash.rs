@@ -521,7 +521,7 @@ impl<K:Hash + Eq,V,A: Allocator> HashMap<K, V, A> {
     }
 }
 
-impl<K:Hash + Eq,V,A: Allocator> Container for HashMap<K, V, A> {
+impl<K: Hash + Eq, V, A> Container for HashMap<K, V, A> {
     /// Return the number of elements in the map
     fn len(&self) -> uint { self.size }
 }
