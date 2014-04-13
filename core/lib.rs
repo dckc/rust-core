@@ -12,7 +12,7 @@
 #![no_std]
 #![allow(ctypes)]
 #![crate_type = "rlib"]
-#![feature(macro_rules)]
+#![feature(macro_rules, default_type_params)]
 
 #[cfg(libc)]
 pub mod arc;
@@ -21,7 +21,6 @@ pub mod rc;
 pub mod weak;
 
 pub mod atomic;
-#[cfg(libc)]
 pub mod deque;
 pub mod cell;
 pub mod char;
@@ -31,19 +30,16 @@ pub mod cmp;
 pub mod concurrent;
 pub mod container;
 pub mod fail;
-#[cfg(libc)]
 pub mod hash;
 #[cfg(libc)]
 pub mod io;
 pub mod iter;
 pub mod kinds;
-#[cfg(libc)]
 pub mod lru;
 pub mod macros;
 pub mod mem;
 pub mod ops;
 pub mod option;
-#[cfg(libc)]
 pub mod priority_queue;
 pub mod ptr;
 pub mod slice;
@@ -52,7 +48,6 @@ pub mod str;
 pub mod thread;
 #[cfg(libc)]
 pub mod time;
-#[cfg(libc)]
 pub mod vec;
 
 pub mod uint;

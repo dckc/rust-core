@@ -35,10 +35,12 @@
 
 use container::Container;
 use hash::{HashMap, HashBytes};
-use mem::transmute;
+use mem::{Allocator, transmute};
 use option::{Some, None, Option};
 use cmp::Eq;
 use ops::Drop;
+#[cfg(libc)]
+use heap::Heap;
 
 struct KeyRef<K> { k: *K }
 
@@ -50,8 +52,17 @@ struct LruEntry<K, V> {
 }
 
 /// An LRU Cache.
-pub struct LruCache<K, V> {
-    map: HashMap<KeyRef<K>, ~LruEntry<K, V>>,
+#[cfg(libc)]
+pub struct LruCache<K, V, A = Heap> {
+    map: HashMap<KeyRef<K>, ~LruEntry<K, V>, A>,
+    max_size: uint,
+    head: *mut LruEntry<K, V>,
+    tail: *mut LruEntry<K, V>,
+}
+
+#[cfg(not(libc))]
+pub struct LruCache<K, V, A> {
+    map: HashMap<KeyRef<K>, ~LruEntry<K, V>, A>,
     max_size: uint,
     head: *mut LruEntry<K, V>,
     tail: *mut LruEntry<K, V>,
@@ -89,11 +100,18 @@ impl<K, V> LruEntry<K, V> {
     }
 }
 
+#[cfg(libc)]
 impl<K: HashBytes + Eq, V> LruCache<K, V> {
-    /// Create an LRU Cache holding at most `capacity` items.
     pub fn new(k0: u64, k1: u64, capacity: uint) -> LruCache<K, V> {
+        LruCache::with_alloc(Heap, k0, k1, capacity)
+    }
+}
+
+impl<K: HashBytes + Eq, V, A: Allocator> LruCache<K, V, A> {
+    /// Create an LRU Cache holding at most `capacity` items.
+    pub fn with_alloc(alloc: A, k0: u64, k1: u64, capacity: uint) -> LruCache<K, V, A> {
         let cache = LruCache {
-            map: HashMap::with_capacity_and_keys(k0, k1, capacity),
+            map: HashMap::with_alloc_capacity_and_keys(alloc, k0, k1, capacity),
             max_size: capacity,
             head: unsafe { transmute(~LruEntry::<K, V>::new()) },
             tail: unsafe { transmute(~LruEntry::<K, V>::new()) },
@@ -215,7 +233,7 @@ impl<K: HashBytes + Eq, V> LruCache<K, V> {
     }
 }
 
-impl<K: HashBytes + Eq, V> Container for LruCache<K, V> {
+impl<K: HashBytes + Eq, V, A> Container for LruCache<K, V, A> {
     /// Return the number of key-value pairs in the cache.
     fn len(&self) -> uint {
         self.map.len()
@@ -223,7 +241,7 @@ impl<K: HashBytes + Eq, V> Container for LruCache<K, V> {
 }
 
 #[unsafe_destructor]
-impl<K, V> Drop for LruCache<K, V> {
+impl<K, V, A> Drop for LruCache<K, V, A> {
     fn drop(&mut self) {
         unsafe {
             let _: ~LruEntry<K, V> = transmute(self.head);
