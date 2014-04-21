@@ -9,10 +9,10 @@
 // except according to those terms.
 
 extern "rust-intrinsic" {
-    fn bswap64(x: i64) -> i64;
-    pub fn ctpop64(x: i64) -> i64;
-    pub fn ctlz64(x: i64) -> i64;
-    pub fn cttz64(x: i64) -> i64;
+    fn bswap64(x: u64) -> u64;
+    pub fn ctpop64(x: u64) -> u64;
+    pub fn ctlz64(x: u64) -> u64;
+    pub fn cttz64(x: u64) -> u64;
     fn i64_add_with_overflow(x: i64, y: i64) -> (i64, bool);
     fn i64_sub_with_overflow(x: i64, y: i64) -> (i64, bool);
     fn i64_mul_with_overflow(x: i64, y: i64) -> (i64, bool);
@@ -33,7 +33,7 @@ pub fn mul_with_overflow(x: i64, y: i64) -> (i64, bool) {
     unsafe { i64_mul_with_overflow(x, y) }
 }
 
-pub fn bswap(x: i64) -> i64 {
+pub fn bswap(x: u64) -> u64 {
     unsafe { bswap64(x) }
 }
 
@@ -43,7 +43,7 @@ pub fn to_be(x: i64) -> i64 {
 }
 
 #[cfg(target_endian = "little")]
-pub fn to_be(x: i64) -> i64 {
+pub fn to_be(x: u64) -> u64 {
     bswap(x)
 }
 

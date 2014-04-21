@@ -30,7 +30,7 @@ pub fn mul_with_overflow(x: u16, y: u16) -> (u16, bool) {
 }
 
 pub fn bswap(x: u16) -> u16 {
-    ::i16::bswap(x as i16) as u16
+    ::i16::bswap(x as u16) as u16
 }
 
 #[cfg(target_endian = "big")]

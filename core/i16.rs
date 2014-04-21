@@ -9,10 +9,10 @@
 // except according to those terms.
 
 extern "rust-intrinsic" {
-    fn bswap16(x: i16) -> i16;
-    pub fn ctpop16(x: i16) -> i16;
-    pub fn ctlz16(x: i16) -> i16;
-    pub fn cttz16(x: i16) -> i16;
+    fn bswap16(x: u16) -> u16;
+    pub fn ctpop16(x: u16) -> u16;
+    pub fn ctlz16(x: u16) -> u16;
+    pub fn cttz16(x: u16) -> u16;
     fn i16_add_with_overflow(x: i16, y: i16) -> (i16, bool);
     fn i16_sub_with_overflow(x: i16, y: i16) -> (i16, bool);
     fn i16_mul_with_overflow(x: i16, y: i16) -> (i16, bool);
@@ -33,7 +33,7 @@ pub fn mul_with_overflow(x: i16, y: i16) -> (i16, bool) {
     unsafe { i16_mul_with_overflow(x, y) }
 }
 
-pub fn bswap(x: i16) -> i16 {
+pub fn bswap(x: u16) -> u16 {
     unsafe { bswap16(x) }
 }
 
@@ -43,7 +43,7 @@ pub fn to_be(x: i16) -> i16 {
 }
 
 #[cfg(target_endian = "little")]
-pub fn to_be(x: i16) -> i16 {
+pub fn to_be(x: u16) -> u16 {
     bswap(x)
 }
 

@@ -57,7 +57,7 @@ pub fn bswap(x: uint) -> uint {
 
 #[cfg(target_word_size = "64")]
 pub fn bswap(x: uint) -> uint {
-    ::i64::bswap(x as i64) as uint
+    ::i64::bswap(x as u64) as uint
 }
 
 #[cfg(target_endian = "big")]
